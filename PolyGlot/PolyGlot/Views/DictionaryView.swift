@@ -25,7 +25,7 @@ struct DictionaryView: View {
                 Divider()
                 resultArea
             }
-            .navigationTitle("词典")
+            .navigationTitle("Dictionary")
             .onChange(of: viewModel.result?.inputWord) { _, newWord in
                 guard let newWord, !newWord.isEmpty,
                       let lang = viewModel.effectiveLanguage else { return }
@@ -47,7 +47,7 @@ struct DictionaryView: View {
     private var searchBar: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                TextField("输入单词...", text: $viewModel.searchText)
+                TextField("Enter a word...", text: $viewModel.searchText)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .onChange(of: viewModel.searchText) {
@@ -75,8 +75,8 @@ struct DictionaryView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("查词")
-                .accessibilityHint("查询单词的释义和语法信息")
+                .accessibilityLabel("Look up")
+                .accessibilityHint("Look up word definitions and grammar")
                 .disabled(viewModel.searchText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal)
@@ -85,7 +85,7 @@ struct DictionaryView: View {
             // Language detection row
             HStack(spacing: 8) {
                 if let detected = viewModel.detectedLanguage, viewModel.manualLanguage == nil {
-                    Label("检测到: \(detected.displayName)", systemImage: "wand.and.stars")
+                    Label("Detected: \(detected.displayName)", systemImage: "wand.and.stars")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -94,14 +94,14 @@ struct DictionaryView: View {
 
                 // Manual language picker
                 Menu {
-                    Button("自动检测") { viewModel.manualLanguage = nil }
+                    Button("Auto Detect") { viewModel.manualLanguage = nil }
                     Divider()
                     ForEach(SupportedLanguage.allCases) { lang in
                         Button(lang.displayName) { viewModel.manualLanguage = lang }
                     }
                 } label: {
                     Label(
-                        viewModel.manualLanguage.map { "输入: \($0.displayName)" } ?? "自动检测",
+                        viewModel.manualLanguage.map { String(localized: "Input: \($0.displayName)") } ?? String(localized: "Auto Detect"),
                         systemImage: "globe"
                     )
                     .font(.caption)
@@ -118,7 +118,7 @@ struct DictionaryView: View {
     @ViewBuilder
     private var resultArea: some View {
         if viewModel.isLoading {
-            LoadingView(message: "分析中...")
+            LoadingView(message: "AI analyzing...")
         } else if let result = viewModel.result {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -197,9 +197,9 @@ struct DictionaryView: View {
             Image(systemName: "sparkles")
                 .foregroundStyle(.purple)
             VStack(alignment: .leading, spacing: 2) {
-                Text("配置 API Key 可获取 AI 深度分析")
+                Text("Configure API Key to enable cloud AI")
                     .font(.subheadline.bold())
-                Text("包括多语言释义、词源、语法分析等")
+                Text("Including multilingual definitions, etymology, grammar analysis")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -287,12 +287,12 @@ struct DictionaryView: View {
                 if dictionaryHistory.isEmpty {
                     EmptyStateView(
                         systemImage: "text.magnifyingglass",
-                        title: "输入单词开始查词",
-                        subtitle: "支持中文、英文、日语、韩语"
+                        title: "Enter a word to look up",
+                        subtitle: "Supports Chinese, English, Japanese, Korean"
                     )
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("最近查询")
+                        Text("Recent Queries")
                             .font(.headline)
                             .padding(.horizontal)
 
@@ -354,15 +354,15 @@ private struct EnglishCard: View {
 
             // Etymology
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                MetaRow(label: "词源", value: etymology)
+                MetaRow(label: String(localized: "Etymology"), value: etymology)
             }
 
             // Synonyms / Antonyms
             if let synonyms = analysis.synonyms, !synonyms.isEmpty {
-                WordChipRow(label: "近义词", words: synonyms, language: .english)
+                WordChipRow(label: String(localized: "Synonyms"), words: synonyms, language: .english)
             }
             if let antonyms = analysis.antonyms, !antonyms.isEmpty {
-                WordChipRow(label: "反义词", words: antonyms, language: .english)
+                WordChipRow(label: String(localized: "Antonyms"), words: antonyms, language: .english)
             }
         }
     }
@@ -374,7 +374,7 @@ private struct ChineseCard: View {
     let analysis: ChineseAnalysis
 
     var body: some View {
-        LanguageSection(title: "中文", color: .language(.chinese)) {
+        LanguageSection(title: SupportedLanguage.chinese.displayName, color: .language(.chinese)) {
             if !analysis.definitions.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { i, def in
@@ -403,7 +403,7 @@ private struct JapaneseCard: View {
     let analysis: JapaneseAnalysis
 
     var body: some View {
-        LanguageSection(title: "日本語", color: .language(.japanese)) {
+        LanguageSection(title: SupportedLanguage.japanese.displayName, color: .language(.japanese)) {
             // Word + reading header
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -434,18 +434,18 @@ private struct JapaneseCard: View {
 
             // Etymology / Conjugation
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                MetaRow(label: "词源", value: etymology, valueLanguage: .japanese)
+                MetaRow(label: String(localized: "Etymology"), value: etymology, valueLanguage: .japanese)
             }
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
-                MetaRow(label: "变形", value: conjugation, valueLanguage: .japanese)
+                MetaRow(label: String(localized: "Conjugation"), value: conjugation, valueLanguage: .japanese)
             }
 
             // Synonyms / Antonyms
             if let synonyms = analysis.synonyms, !synonyms.isEmpty {
-                WordChipRow(label: "近义词", words: synonyms, language: .japanese)
+                WordChipRow(label: String(localized: "Synonyms"), words: synonyms, language: .japanese)
             }
             if let antonyms = analysis.antonyms, !antonyms.isEmpty {
-                WordChipRow(label: "反义词", words: antonyms, language: .japanese)
+                WordChipRow(label: String(localized: "Antonyms"), words: antonyms, language: .japanese)
             }
         }
     }
@@ -457,7 +457,7 @@ private struct KoreanCard: View {
     let analysis: KoreanAnalysis
 
     var body: some View {
-        LanguageSection(title: "한국어", color: .language(.korean)) {
+        LanguageSection(title: SupportedLanguage.korean.displayName, color: .language(.korean)) {
             // Word + reading header
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -483,10 +483,10 @@ private struct KoreanCard: View {
 
             // Etymology / Conjugation
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                MetaRow(label: "词源", value: etymology)
+                MetaRow(label: String(localized: "Etymology"), value: etymology)
             }
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
-                MetaRow(label: "变形", value: conjugation)
+                MetaRow(label: String(localized: "Conjugation"), value: conjugation)
             }
         }
     }
@@ -702,7 +702,7 @@ private struct SystemDictionaryCard: View {
                 Image(systemName: "character.book.closed.fill")
                     .font(.subheadline)
                     .foregroundStyle(.blue)
-                Text("系统词典")
+                Text("System Dictionary")
                     .font(.subheadline.bold())
                     .foregroundStyle(.blue)
             }
@@ -718,10 +718,10 @@ private struct SystemDictionaryCard: View {
                             .font(.title3)
                             .foregroundStyle(.blue)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("查看完整释义")
+                            Text("View Full Definition")
                                 .font(.subheadline.bold())
                                 .foregroundStyle(.primary)
-                            Text("在系统词典中打开")
+                            Text("Open in System Dictionary")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -979,7 +979,7 @@ private struct SysDictEnglishView: View {
                 SysDictEntryList(entries: entries)
             }
             if let origin {
-                SysDictMetaBox(label: "词源", value: origin)
+                SysDictMetaBox(label: String(localized: "Etymology"), value: origin)
             }
         }
     }

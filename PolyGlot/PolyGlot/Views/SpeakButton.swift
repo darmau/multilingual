@@ -32,8 +32,8 @@ struct SpeakButton: View {
                 .font(.body)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(ttsManager.isSpeaking ? "停止朗读" : "朗读")
-            .accessibilityHint(ttsManager.isSpeaking ? "点击停止" : "点击朗读此文本")
+            .accessibilityLabel(ttsManager.isSpeaking ? "Stop" : "Speak")
+            .accessibilityHint(ttsManager.isSpeaking ? "Tap to stop" : "Tap to read this text aloud")
         }
     }
 }

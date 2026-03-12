@@ -44,16 +44,16 @@ final class AppleDictionaryService {
                 return DictionaryResult(term: term, definition: text, found: true)
             }
         }
-        return DictionaryResult(term: term, definition: "系统词典中未找到该词条。", found: false)
+        return DictionaryResult(term: term, definition: String(localized: "Term not found in system dictionary."), found: false)
         #else
         if UIReferenceLibraryViewController.dictionaryHasDefinition(forTerm: term) {
             return DictionaryResult(
                 term: term,
-                definition: "系统词典中有该词条的释义。点击下方按钮查看完整释义。",
+                definition: String(localized: "Definition available. Tap the button below to view."),
                 found: true
             )
         }
-        return DictionaryResult(term: term, definition: "系统词典中未找到该词条。", found: false)
+        return DictionaryResult(term: term, definition: String(localized: "Term not found in system dictionary."), found: false)
         #endif
     }
 }

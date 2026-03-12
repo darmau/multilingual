@@ -12,13 +12,13 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var title: String {
+    var title: LocalizedStringKey {
         switch self {
-        case .dictionary:   return "词典"
-        case .sentence:     return "句子分析"
-        case .translation:  return "翻译"
-        case .question:     return "提问"
-        case .settings:     return "设置"
+        case .dictionary:   return "Dictionary"
+        case .sentence:     return "Sentence Analysis"
+        case .translation:  return "Translation"
+        case .question:     return "Question"
+        case .settings:     return "Settings"
         }
     }
 

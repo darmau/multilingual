@@ -24,7 +24,7 @@ struct LanguageBadge: View {
                     lineWidth: 1
                 )
             )
-            .accessibilityLabel("\(language.displayName)语言")
+            .accessibilityLabel(Text("\(language.displayName) language"))
             .accessibilityAddTraits(.isStaticText)
     }
 }
@@ -33,7 +33,7 @@ struct LanguageBadge: View {
 
 /// Centered spinner with an optional message, used while AI is working.
 struct LoadingView: View {
-    var message: String = "AI 分析中..."
+    var message: LocalizedStringKey = "AI analyzing..."
 
     var body: some View {
         VStack(spacing: 16) {
@@ -70,7 +70,7 @@ struct ErrorBanner: View {
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("出错了")
+                    Text("Error occurred")
                         .font(.headline)
                     Text(message)
                         .font(.subheadline)
@@ -86,13 +86,13 @@ struct ErrorBanner: View {
 
             HStack(spacing: 10) {
                 if let retry = retryAction {
-                    Button("重试") { retry() }
+                    Button("Retry") { retry() }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                 }
 
                 if rawResponse != nil {
-                    Button(showRaw ? "隐藏原始响应" : "查看原始响应") {
+                    Button(showRaw ? "Hide Raw Response" : "View Raw Response") {
                         showRaw.toggle()
                     }
                     .buttonStyle(.bordered)
@@ -129,14 +129,14 @@ struct ErrorBanner: View {
 
 /// A DisclosureGroup-based collapsible section with a styled header.
 struct CollapsibleSection<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     var icon: String? = nil
     var accentColor: Color = .secondary
     @State private var isExpanded: Bool
     @ViewBuilder let content: () -> Content
 
     init(
-        title: String,
+        title: LocalizedStringKey,
         icon: String? = nil,
         accentColor: Color = .secondary,
         initiallyExpanded: Bool = true,
@@ -176,8 +176,8 @@ struct CollapsibleSection<Content: View>: View {
 /// Generic empty state with icon, title, and subtitle.
 struct EmptyStateView: View {
     let systemImage: String
-    let title: String
-    var subtitle: String = ""
+    let title: LocalizedStringKey
+    var subtitle: LocalizedStringKey = ""
 
     var body: some View {
         VStack(spacing: 12) {
@@ -187,12 +187,10 @@ struct EmptyStateView: View {
             Text(title)
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            if !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-            }
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -207,7 +205,7 @@ struct OfflineBanner: View {
         HStack(spacing: 8) {
             Image(systemName: "wifi.slash")
                 .font(.caption.bold())
-            Text("无网络连接")
+            Text("No Network Connection")
                 .font(.caption.bold())
             Spacer()
         }
@@ -231,7 +229,7 @@ struct APIKeyMissingBanner: View {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
                     .font(.subheadline)
-                Text("配置 API Key 可启用云端 AI — 前往设置")
+                Text("Configure API Key to enable cloud AI — Go to Settings")
                     .font(.subheadline.bold())
                 Spacer()
                 Image(systemName: "chevron.right")
@@ -247,8 +245,8 @@ struct APIKeyMissingBanner: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("配置 API Key 以启用云端 AI 功能")
-        .accessibilityHint("前往设置页面填写 API Key")
+        .accessibilityLabel("Configure API Key to enable cloud AI")
+        .accessibilityHint("Go to Settings to enter API Key")
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -269,16 +267,16 @@ struct APIKeyMissingBanner: View {
                 }
             }
             ErrorBanner(
-                message: "API Key 未设置，请在设置中填写对应的 API Key。",
+                message: "API Key not set.",
                 rawResponse: "{\"error\": \"unauthorized\"}",
                 retryAction: {}
             )
-            CollapsibleSection(title: "语法分析", icon: "text.alignleft", accentColor: .blue) {
-                Text("这里是折叠内容")
+            CollapsibleSection(title: "Grammar Analysis", icon: "text.alignleft", accentColor: .blue) {
+                Text("Collapsible content here")
             }
             EmptyStateView(systemImage: "text.magnifyingglass",
-                          title: "输入单词开始查词",
-                          subtitle: "支持中文、英文、日语、韩语")
+                          title: "Enter a word to look up",
+                          subtitle: "Supports Chinese, English, Japanese, Korean")
         }
         .padding()
     }

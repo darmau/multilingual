@@ -17,21 +17,21 @@ enum LLMError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "API Key 未设置，请在「设置」中填写对应的 API Key 以使用云端 AI 功能。"
+            return String(localized: "API Key not set. Please enter your API Key in Settings to use cloud AI.")
         case .offline:
-            return "网络不可用，请检查您的网络连接。"
+            return String(localized: "Network unavailable. Please check your connection.")
         case .noLLMAvailable:
-            return "当前无可用的 AI 服务。请配置 API Key 或使用支持 Apple Intelligence 的设备。"
+            return String(localized: "No AI service available. Please configure an API Key or use a device with Apple Intelligence.")
         case .invalidURL:
-            return "请求 URL 无效。"
+            return String(localized: "Invalid request URL.")
         case .invalidResponse:
-            return "服务器返回了无效的响应。"
+            return String(localized: "Server returned an invalid response.")
         case .apiError(let statusCode, let message):
-            return "API 错误 (\(statusCode)): \(message)"
+            return String(localized: "API error (\(statusCode)): \(message)")
         case .parsingError:
-            return "无法解析服务器响应。"
+            return String(localized: "Unable to parse server response.")
         case .networkError(let error):
-            return "网络错误: \(error.localizedDescription)"
+            return String(localized: "Network error: \(error.localizedDescription)")
         }
     }
 
