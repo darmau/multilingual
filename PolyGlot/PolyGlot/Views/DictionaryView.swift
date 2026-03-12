@@ -331,16 +331,10 @@ private struct JapaneseCard: View {
         LanguageSection(title: "日本語", color: .purple) {
             // Word + reading + speak
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(analysis.word)
-                        .font(.title2.bold())
-                    if let reading = analysis.reading, !reading.isEmpty {
-                        Text(reading)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                SpeakButton(text: analysis.word, language: .japanese)
+                FuriganaText(analysis.word, font: .title2)
+                    .fontWeight(.bold)
+                SpeakButton(text: FuriganaParser.plainText(from: FuriganaParser.parse(analysis.word)),
+                            language: .japanese)
             }
 
             // Definitions
@@ -499,19 +493,24 @@ private struct DefinitionRow: View {
             if let example, !example.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(example)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .italic()
-                            .textSelection(.enabled)
-                        if let reading = exampleReading, !reading.isEmpty {
-                            Text(reading)
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
+                        if exampleLanguage == .japanese {
+                            FuriganaText(example, font: .subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text(example)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .italic()
+                                .textSelection(.enabled)
                         }
                     }
-                    SpeakButton(text: example, language: exampleLanguage)
-                        .font(.caption)
+                    SpeakButton(
+                        text: exampleLanguage == .japanese
+                            ? FuriganaParser.plainText(from: FuriganaParser.parse(example))
+                            : example,
+                        language: exampleLanguage
+                    )
+                    .font(.caption)
                 }
             }
         }

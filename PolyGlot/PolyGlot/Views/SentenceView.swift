@@ -273,8 +273,11 @@ private struct JapaneseSentenceCard: View {
 
     var body: some View {
         SentenceLanguageSection(title: "日本語", color: .purple) {
+            // FuriganaText handles inline ruby; translationReading shown as
+            // a plain-kana fallback only when the translation contains no markup.
             TranslationRow(text: analysis.translation, language: .japanese)
-            if let reading = analysis.translationReading, !reading.isEmpty {
+            if !analysis.translation.contains("{"),
+               let reading = analysis.translationReading, !reading.isEmpty {
                 Text(reading)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -366,10 +369,19 @@ private struct TranslationRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text(text)
-                .font(.body)
-                .textSelection(.enabled)
-            SpeakButton(text: text, language: language)
+            if language == .japanese {
+                FuriganaText(text, font: .body)
+            } else {
+                Text(text)
+                    .font(.body)
+                    .textSelection(.enabled)
+            }
+            SpeakButton(
+                text: language == .japanese
+                    ? FuriganaParser.plainText(from: FuriganaParser.parse(text))
+                    : text,
+                language: language
+            )
         }
     }
 }
