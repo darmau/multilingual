@@ -186,46 +186,9 @@ struct DictionaryView: View {
     // MARK: - System Dictionary Card
 
     private func systemDictionaryCard(_ result: AppleDictionaryService.DictionaryResult) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "character.book.closed.fill")
-                    .foregroundStyle(.blue)
-                Text("系统词典")
-                    .font(.headline)
-                    .foregroundStyle(.blue)
-                Spacer()
-            }
-
-            #if os(macOS)
-            Text(result.definition)
-                .font(.body)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            #else
-            if result.found {
-                Button {
-                    viewModel.showSystemDictionary = true
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "book.pages")
-                        Text("查看系统词典释义")
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                    }
-                    .padding(12)
-                    .background(Color.blue.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.plain)
-            } else {
-                Text(result.definition)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            #endif
-        }
-        .cardStyle(accentColor: .blue)
+        SystemDictionaryCard(result: result, onOpenSheet: {
+            viewModel.showSystemDictionary = true
+        })
     }
 
     /// Gentle hint shown when no API key is configured.
@@ -722,6 +685,265 @@ private struct WordChipRow: View {
         }
     }
 }
+
+// MARK: - System Dictionary Card View
+
+private struct SystemDictionaryCard: View {
+    let result: AppleDictionaryService.DictionaryResult
+    let onOpenSheet: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header bar
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.blue)
+                    .frame(width: 3, height: 16)
+                Image(systemName: "character.book.closed.fill")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                Text("系统词典")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.blue)
+            }
+            .padding(.bottom, 12)
+
+            #if os(macOS)
+            SystemDictionaryParsedView(raw: result.definition)
+            #else
+            if result.found {
+                Button(action: onOpenSheet) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "book.pages")
+                            .font(.title3)
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("查看完整释义")
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.primary)
+                            Text("在系统词典中打开")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption.bold())
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(12)
+                    .background(Color.blue.opacity(0.07))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.blue.opacity(0.15), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            #endif
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(Color.blue.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - macOS: Parsed System Dictionary View
+
+#if os(macOS)
+/// Parses the raw DCSCopyTextDefinition string into structured sections.
+private struct SystemDictionaryParsedView: View {
+    let raw: String
+
+    private struct ParsedEntry: Identifiable {
+        let id = UUID()
+        let pos: String?        // e.g. "adjective", "noun", "verb"
+        let definition: String
+    }
+
+    private var phonetic: String? {
+        // Format: "word | phonetic | pos definition..."
+        // or:     "word | phonetic | verb (forms) 1 ..."
+        let parts = raw.components(separatedBy: " | ")
+        guard parts.count >= 2 else { return nil }
+        let candidate = parts[1].trimmingCharacters(in: .whitespaces)
+        // Phonetic contains IPA chars like ə ɪ ː ˈ ˌ or pipes — exclude plain words
+        let hasIPA = candidate.unicodeScalars.contains { sc in
+            sc.value > 0x0250 && sc.value < 0x02B0 ||  // IPA extensions
+            sc.value > 0x1D00 && sc.value < 0x1DBF ||  // phonetic extensions
+            "ˈˌˑ·|".unicodeScalars.contains(sc)
+        }
+        return hasIPA ? candidate : nil
+    }
+
+    private var origin: String? {
+        guard let range = raw.range(of: "ORIGIN ") else { return nil }
+        var text = String(raw[range.upperBound...])
+        // Strip DERIVATIVES section if it appears after ORIGIN
+        if let deriv = text.range(of: "\nDERIVATIVES") {
+            text = String(text[..<deriv.lowerBound])
+        }
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var entries: [ParsedEntry] {
+        // Strip the word (before first |), phonetic, and trailing DERIVATIVES/ORIGIN
+        var body = raw
+        // Remove "word | phonetic | " prefix
+        let pipeCount = body.components(separatedBy: " | ").count
+        if pipeCount >= 3 {
+            // Drop up to and including the second " | "
+            var stripped = body
+            if let r1 = stripped.range(of: " | ") {
+                stripped = String(stripped[r1.upperBound...])
+                if let r2 = stripped.range(of: " | ") {
+                    stripped = String(stripped[r2.upperBound...])
+                    body = stripped
+                }
+            }
+        }
+        // Remove DERIVATIVES ... and ORIGIN ...
+        for marker in ["DERIVATIVES", "ORIGIN", "PHRASES", "PHRASAL VERBS", "USAGE"] {
+            if let r = body.range(of: "\(marker) ") {
+                body = String(body[..<r.lowerBound])
+            }
+        }
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Known POS keywords
+        let posKeywords = ["adjective", "adverb", "verb", "noun", "pronoun",
+                           "preposition", "conjunction", "interjection", "determiner",
+                           "exclamation", "predeterminer", "prefix", "suffix"]
+
+        var results: [ParsedEntry] = []
+
+        // Split on numbered definitions: " 1 ", " 2 ", etc. using NSRegularExpression
+        let pattern = "\\s+\\d+\\s+"
+        let chunks: [String]
+        if let regex = try? NSRegularExpression(pattern: pattern) {
+            let nsBody = body as NSString
+            let fullRange = NSRange(location: 0, length: nsBody.length)
+            let matches = regex.matches(in: body, range: fullRange)
+            var parts: [String] = []
+            var lastEnd = 0
+            for match in matches {
+                let range = Range(match.range, in: body)!
+                parts.append(String(body[body.index(body.startIndex, offsetBy: lastEnd)..<range.lowerBound]))
+                lastEnd = body.distance(from: body.startIndex, to: range.upperBound)
+            }
+            parts.append(String(body[body.index(body.startIndex, offsetBy: lastEnd)...]))
+            chunks = parts
+        } else {
+            chunks = [body]
+        }
+
+        for chunk in chunks where !chunk.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty {
+            var text = chunk.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            // Remove inline examples after " | "
+            if let pipeRange = text.range(of: " | ") {
+                text = String(text[..<pipeRange.lowerBound])
+            }
+            // Detect leading POS word
+            var detectedPos: String? = nil
+            for pos in posKeywords {
+                if text.lowercased().hasPrefix(pos) {
+                    detectedPos = pos
+                    let afterPos = text.dropFirst(pos.count).trimmingCharacters(in: CharacterSet.whitespaces)
+                    // skip conjugation parens: "(runs, running, ...)"
+                    var remaining = afterPos
+                    if remaining.hasPrefix("(") {
+                        if let close = remaining.firstIndex(of: ")") {
+                            remaining = String(remaining[remaining.index(after: close)...])
+                                .trimmingCharacters(in: CharacterSet.whitespaces)
+                        }
+                    }
+                    text = remaining
+                    break
+                }
+            }
+            // Clean up bullet points "•"
+            text = text.replacingOccurrences(of: " • ", with: "\n• ")
+            // Only keep first sentence for brevity (up to first full stop followed by space+capital)
+            if let dotRange = text.range(of: "\\.\\s+[A-Z]", options: .regularExpression) {
+                text = String(text[..<dotRange.lowerBound]) + "."
+            }
+            text = text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            if !text.isEmpty {
+                results.append(ParsedEntry(pos: detectedPos, definition: text))
+            }
+        }
+        return results.isEmpty ? [ParsedEntry(pos: nil, definition: body)] : results
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Phonetic
+            if let phonetic {
+                Text(phonetic)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .italic()
+            }
+
+            // Definitions
+            if !entries.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(entries.prefix(6).enumerated()), id: \.offset) { index, entry in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(index + 1)")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.blue)
+                                .frame(width: 18, height: 18)
+                                .background(Color.blue.opacity(0.10))
+                                .clipShape(Circle())
+                                .padding(.top, 2)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                if let pos = entry.pos {
+                                    Text(pos)
+                                        .font(.caption.bold())
+                                        .foregroundStyle(.blue)
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 2)
+                                        .background(Color.blue.opacity(0.08))
+                                        .clipShape(Capsule())
+                                }
+                                Text(entry.definition)
+                                    .font(.subheadline)
+                                    .textSelection(.enabled)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Origin
+            if let origin {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("词源")
+                        .font(.caption.bold())
+                        .foregroundStyle(.secondary)
+                    Text(origin)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.quaternary.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+        }
+    }
+}
+#endif
 
 // MARK: - System Dictionary VC Wrapper (iOS)
 
