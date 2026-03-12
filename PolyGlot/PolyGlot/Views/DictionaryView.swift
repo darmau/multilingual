@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct DictionaryView: View {
     @State private var viewModel = DictionaryViewModel()
@@ -29,6 +32,13 @@ struct DictionaryView: View {
                 let entry = QueryHistory(text: newWord, language: lang, mode: .dictionary)
                 modelContext.insert(entry)
             }
+            #if canImport(UIKit)
+            .sheet(isPresented: $viewModel.showSystemDictionary) {
+                if let term = viewModel.systemDictionaryResult?.term {
+                    SystemDictionaryView(term: term)
+                }
+            }
+            #endif
         }
     }
 
@@ -108,20 +118,15 @@ struct DictionaryView: View {
     @ViewBuilder
     private var resultArea: some View {
         if viewModel.isLoading {
-            LoadingView(message: "AI 分析中...")
-        } else if let errorMessage = viewModel.errorMessage {
-            ScrollView {
-                ErrorBanner(
-                    message: errorMessage,
-                    rawResponse: viewModel.rawResponse,
-                    retryAction: { submitSearch() },
-                    isAPIKeyError: viewModel.isAPIKeyError
-                )
-                .padding()
-            }
+            LoadingView(message: "分析中...")
         } else if let result = viewModel.result {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
+                    // System dictionary card (if available alongside LLM result)
+                    if let dictResult = viewModel.systemDictionaryResult, dictResult.found {
+                        systemDictionaryCard(dictResult)
+                    }
+
                     // Header
                     inputWordHeader(result: result)
 
@@ -141,9 +146,109 @@ struct DictionaryView: View {
                 }
                 .padding()
             }
+        } else if let dictResult = viewModel.systemDictionaryResult, dictResult.found {
+            // No LLM result but system dictionary found the term
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    systemDictionaryCard(dictResult)
+
+                    if let errorMessage = viewModel.errorMessage {
+                        ErrorBanner(
+                            message: errorMessage,
+                            rawResponse: viewModel.rawResponse,
+                            retryAction: { submitSearch() },
+                            isAPIKeyError: viewModel.isAPIKeyError
+                        )
+                    }
+
+                    // Hint to configure API key for richer analysis
+                    if !settings.hasAnyAPIKey && !AppleIntelligenceAvailability.isAvailable {
+                        apiKeyHintBanner
+                    }
+                }
+                .padding()
+            }
+        } else if let errorMessage = viewModel.errorMessage {
+            ScrollView {
+                ErrorBanner(
+                    message: errorMessage,
+                    rawResponse: viewModel.rawResponse,
+                    retryAction: { submitSearch() },
+                    isAPIKeyError: viewModel.isAPIKeyError
+                )
+                .padding()
+            }
         } else {
             emptyStateWithHistory
         }
+    }
+
+    // MARK: - System Dictionary Card
+
+    private func systemDictionaryCard(_ result: AppleDictionaryService.DictionaryResult) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "character.book.closed.fill")
+                    .foregroundStyle(.blue)
+                Text("系统词典")
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                Spacer()
+            }
+
+            #if os(macOS)
+            Text(result.definition)
+                .font(.body)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            #else
+            if result.found {
+                Button {
+                    viewModel.showSystemDictionary = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "book.pages")
+                        Text("查看系统词典释义")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                    }
+                    .padding(12)
+                    .background(Color.blue.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text(result.definition)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            #endif
+        }
+        .cardStyle(accentColor: .blue)
+    }
+
+    /// Gentle hint shown when no API key is configured.
+    private var apiKeyHintBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(.purple)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("配置 API Key 可获取 AI 深度分析")
+                    .font(.subheadline.bold())
+                Text("包括多语言释义、词源、语法分析等")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(.purple.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(.purple.opacity(0.2), lineWidth: 1)
+        )
     }
 
     // MARK: - Input Word Header
@@ -554,6 +659,21 @@ private struct WordListRow: View {
         }
     }
 }
+
+// MARK: - System Dictionary VC Wrapper (iOS)
+
+#if canImport(UIKit)
+/// Wraps UIReferenceLibraryViewController for presentation inside SwiftUI.
+private struct SystemDictionaryView: UIViewControllerRepresentable {
+    let term: String
+
+    func makeUIViewController(context: Context) -> UIReferenceLibraryViewController {
+        UIReferenceLibraryViewController(term: term)
+    }
+
+    func updateUIViewController(_ uiViewController: UIReferenceLibraryViewController, context: Context) {}
+}
+#endif
 
 // MARK: - Preview
 

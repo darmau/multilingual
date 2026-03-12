@@ -99,7 +99,7 @@ struct TranslationView: View {
 
             Button {
                 isEditorFocused = false
-                if viewModel.useLocalTranslation {
+                if viewModel.shouldPreferLocalTranslation(settings: settings) {
                     if #available(macOS 15.0, iOS 18.0, *) {
                         viewModel.prepareLocalTranslation()
                     }
@@ -194,12 +194,20 @@ struct TranslationView: View {
     // MARK: - Toggle Bar
 
     private var toggleBar: some View {
-        Toggle(isOn: $viewModel.useLocalTranslation) {
-            Label(
-                viewModel.useLocalTranslation ? "本地翻译（Apple）" : "云端 AI 翻译",
-                systemImage: viewModel.useLocalTranslation ? "iphone" : "cloud"
-            )
-            .font(.subheadline)
+        HStack {
+            Toggle(isOn: $viewModel.useLocalTranslation) {
+                Label(
+                    viewModel.shouldPreferLocalTranslation(settings: settings) ? "本地翻译（Apple）" : "云端 AI 翻译",
+                    systemImage: viewModel.shouldPreferLocalTranslation(settings: settings) ? "iphone" : "cloud"
+                )
+                .font(.subheadline)
+            }
+
+            if !LLMManager.hasAvailableLLM(settings: settings) && !viewModel.useLocalTranslation {
+                Text("未配置 AI 服务，自动使用本地翻译")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)

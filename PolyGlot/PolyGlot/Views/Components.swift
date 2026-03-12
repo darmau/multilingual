@@ -220,33 +220,34 @@ struct OfflineBanner: View {
 
 // MARK: - APIKeyMissingBanner
 
-/// Banner shown when a request fails because API key is missing.
-/// Tapping it navigates the user to the Settings tab.
+/// Banner shown when cloud AI features are unavailable due to missing API key.
+/// Tapping it navigates the user to the Settings tab. Uses a non-alarming purple style
+/// since the app can still function with local capabilities.
 struct APIKeyMissingBanner: View {
     var navigateToSettings: () -> Void
 
     var body: some View {
         Button(action: navigateToSettings) {
             HStack(spacing: 8) {
-                Image(systemName: "key.slash")
+                Image(systemName: "sparkles")
                     .font(.subheadline)
-                Text("API Key 未设置 — 点击前往设置")
+                Text("配置 API Key 可启用云端 AI — 前往设置")
                     .font(.subheadline.bold())
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption)
             }
             .padding(12)
-            .background(Color.red.opacity(0.1))
-            .foregroundStyle(Color.red)
+            .background(Color.purple.opacity(0.08))
+            .foregroundStyle(Color.purple)
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.red.opacity(0.3), lineWidth: 1)
+                    .strokeBorder(Color.purple.opacity(0.25), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("API Key 未设置，点击前往设置")
+        .accessibilityLabel("配置 API Key 以启用云端 AI 功能")
         .accessibilityHint("前往设置页面填写 API Key")
         .accessibilityAddTraits(.isButton)
     }

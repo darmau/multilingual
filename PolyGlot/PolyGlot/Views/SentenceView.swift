@@ -192,11 +192,20 @@ struct SentenceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 if sentenceHistory.isEmpty {
-                    EmptyStateView(
-                        systemImage: "text.bubble",
-                        title: "输入句子开始分析",
-                        subtitle: "支持中文、英文、日语、韩语"
-                    )
+                    VStack(spacing: 16) {
+                        EmptyStateView(
+                            systemImage: "text.bubble",
+                            title: "输入句子开始分析",
+                            subtitle: "支持中文、英文、日语、韩语"
+                        )
+                        if !settings.hasActiveAPIKey && !AppleIntelligenceAvailability.isAvailable {
+                            Text("此功能需要配置 API Key 或使用支持 Apple Intelligence 的设备")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
+                        }
+                    }
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("最近查询")

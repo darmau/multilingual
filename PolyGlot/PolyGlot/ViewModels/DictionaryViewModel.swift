@@ -11,14 +11,25 @@ final class DictionaryViewModel {
     var rawResponse: String? = nil
     var errorMessage: String? = nil
 
+    /// System dictionary lookup result (shown alongside or instead of LLM result).
+    var systemDictionaryResult: AppleDictionaryService.DictionaryResult? = nil
+    /// Whether to present the system dictionary viewer (iOS).
+    var showSystemDictionary: Bool = false
+
     private let llmManager = LLMManager()
     /// Tracks the current in-flight request so it can be cancelled.
     private var currentTask: Task<Void, Never>?
 
-    /// The effective input language: manual override takes precedence, then auto-detected.
     /// True when the current error requires the user to configure an API key.
     var isAPIKeyError: Bool {
-        errorMessage == LLMError.missingAPIKey.errorDescription
+        guard let msg = errorMessage else { return false }
+        return msg == LLMError.missingAPIKey.errorDescription
+            || msg == LLMError.noLLMAvailable.errorDescription
+    }
+
+    /// True when no LLM is available and we're in offline/dictionary-only mode.
+    var isOfflineDictionaryMode: Bool {
+        result == nil && systemDictionaryResult != nil
     }
 
     var effectiveLanguage: SupportedLanguage? {
@@ -40,6 +51,7 @@ final class DictionaryViewModel {
         currentTask = Task { await _analyze(settings: settings) }
     }
 
+    @MainActor
     private func _analyze(settings: Settings) async {
         let word = searchText.trimmingCharacters(in: .whitespaces)
         guard !word.isEmpty else { return }
@@ -60,26 +72,47 @@ final class DictionaryViewModel {
         errorMessage = nil
         result = nil
         rawResponse = nil
+        systemDictionaryResult = nil
 
         defer { isLoading = false }
 
-        let prompt = PromptBuilder.dictionaryPrompt(word: word, inputLanguage: language)
-        let systemPrompt = PromptBuilder.dictionarySystemPrompt
+        // Always query system dictionary when enabled
+        if settings.useSystemDictionary {
+            systemDictionaryResult = AppleDictionaryService.lookup(term: word)
+        }
 
-        do {
-            let responseText = try await llmManager.sendPrompt(
-                prompt, systemPrompt: systemPrompt, settings: settings)
-            guard !Task.isCancelled else { return }
-            rawResponse = responseText
-            result = parseResult(from: responseText)
-            if result == nil {
-                errorMessage = "无法解析响应，请重试。"
+        // Try LLM analysis (Apple Intelligence or cloud API)
+        let hasLLM = LLMManager.hasAvailableLLM(settings: settings)
+
+        if hasLLM {
+            let prompt = PromptBuilder.dictionaryPrompt(word: word, inputLanguage: language)
+            let systemPrompt = PromptBuilder.dictionarySystemPrompt
+
+            do {
+                let responseText = try await llmManager.sendPrompt(
+                    prompt, systemPrompt: systemPrompt, settings: settings)
+                guard !Task.isCancelled else { return }
+                rawResponse = responseText
+                result = parseResult(from: responseText)
+                if result == nil {
+                    errorMessage = "无法解析响应，请重试。"
+                }
+            } catch is CancellationError {
+                // Silently ignore cancellation
+            } catch {
+                guard !Task.isCancelled else { return }
+                // If we have a system dictionary result, show it with a soft warning
+                // instead of a blocking error
+                if systemDictionaryResult?.found == true {
+                    errorMessage = nil // Don't show error; system dict is enough
+                } else {
+                    errorMessage = error.localizedDescription
+                }
             }
-        } catch is CancellationError {
-            // Silently ignore cancellation
-        } catch {
-            guard !Task.isCancelled else { return }
-            errorMessage = error.localizedDescription
+        }
+        // If no LLM and no system dictionary found, show a helpful message
+        if !hasLLM && result == nil && systemDictionaryResult?.found != true {
+            errorMessage = "未配置 AI 服务，且系统词典中未找到该词条。请在「设置」中配置 API Key 以获取完整分析。"
         }
     }
 
@@ -105,6 +138,8 @@ final class DictionaryViewModel {
         result = nil
         rawResponse = nil
         errorMessage = nil
+        systemDictionaryResult = nil
+        showSystemDictionary = false
         isLoading = false
     }
 }

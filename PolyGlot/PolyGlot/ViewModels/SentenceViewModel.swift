@@ -15,7 +15,9 @@ final class SentenceViewModel {
     private var currentTask: Task<Void, Never>?
 
     var isAPIKeyError: Bool {
-        errorMessage == LLMError.missingAPIKey.errorDescription
+        guard let msg = errorMessage else { return false }
+        return msg == LLMError.missingAPIKey.errorDescription
+            || msg == LLMError.noLLMAvailable.errorDescription
     }
 
     var effectiveLanguage: SupportedLanguage? {

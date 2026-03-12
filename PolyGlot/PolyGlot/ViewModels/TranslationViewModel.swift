@@ -20,13 +20,23 @@ final class TranslationViewModel {
     private var currentTask: Task<Void, Never>?
 
     var isAPIKeyError: Bool {
-        errorMessage == LLMError.missingAPIKey.errorDescription
+        guard let msg = errorMessage else { return false }
+        return msg == LLMError.missingAPIKey.errorDescription
+            || msg == LLMError.noLLMAvailable.errorDescription
     }
 
     var canTranslate: Bool {
         !sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !isLoading
             && sourceLanguage != targetLanguage
+    }
+
+    /// Returns true when local translation should be used automatically
+    /// (e.g. when no API key is configured and Apple Intelligence is not available).
+    @MainActor
+    func shouldPreferLocalTranslation(settings: Settings) -> Bool {
+        if useLocalTranslation { return true }
+        return !LLMManager.hasAvailableLLM(settings: settings)
     }
 
     func swapLanguages() {
