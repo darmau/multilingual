@@ -50,6 +50,32 @@ struct SettingsView: View {
                         }
                     }
                 }
+
+                Section("连接测试") {
+                    Button {
+                        Task {
+                            await viewModel.testConnection(settings: settings)
+                        }
+                    } label: {
+                        HStack {
+                            Text("Test Connection")
+                            Spacer()
+                            if viewModel.isTesting {
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(viewModel.isTesting)
+
+                    if viewModel.showTestResult {
+                        Label(
+                            viewModel.testResultMessage,
+                            systemImage: viewModel.testResultIsSuccess ? "checkmark.circle.fill" : "xmark.circle.fill"
+                        )
+                        .foregroundStyle(viewModel.testResultIsSuccess ? .green : .red)
+                        .font(.caption)
+                    }
+                }
             }
             .navigationTitle("设置")
             .onAppear {
