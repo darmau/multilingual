@@ -43,10 +43,18 @@ final class QuestionViewModel {
         defer { isLoading = false }
 
         do {
-            let reply = try await llmManager.sendPrompt(prompt, systemPrompt: systemPrompt, settings: settings)
-            guard !Task.isCancelled else { return }
-            answerText = reply
-            answerLanguage = LanguageDetector.detect(reply)
+            for try await chunk in llmManager.streamPrompt(prompt, systemPrompt: systemPrompt, settings: settings) {
+                guard !Task.isCancelled else { return }
+                answerText += chunk
+                // Detect language once we have enough text
+                if answerLanguage == nil && answerText.count > 10 {
+                    answerLanguage = LanguageDetector.detect(answerText)
+                }
+            }
+            // Final language detection on complete response
+            if answerLanguage == nil {
+                answerLanguage = LanguageDetector.detect(answerText)
+            }
         } catch is CancellationError {
             // Silently ignore cancellation
         } catch {

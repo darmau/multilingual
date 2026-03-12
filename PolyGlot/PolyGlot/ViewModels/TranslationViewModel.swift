@@ -71,9 +71,10 @@ final class TranslationViewModel {
         let systemPrompt = "You are a professional translator. Translate the following text from \(sourceLanguage.displayName) to \(targetLanguage.displayName). Output ONLY the translated text, no explanations."
 
         do {
-            let result = try await llmManager.sendPrompt(text, systemPrompt: systemPrompt, settings: settings)
-            guard !Task.isCancelled else { return }
-            translatedText = result.trimmingCharacters(in: .whitespacesAndNewlines)
+            for try await chunk in llmManager.streamPrompt(text, systemPrompt: systemPrompt, settings: settings) {
+                guard !Task.isCancelled else { return }
+                translatedText += chunk
+            }
         } catch is CancellationError {
             // Silently ignore cancellation
         } catch {

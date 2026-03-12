@@ -86,9 +86,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apple Intelligence")
                             .font(.subheadline.weight(.medium))
-                        Text(AppleIntelligenceAvailability.isAvailable
-                             ? "Available — Device AI will be prioritized"
-                             : "Not supported on this device")
+                        Text(AppleIntelligenceAvailability.statusDescription)
                             .font(.caption)
                             .foregroundStyle(AppleIntelligenceAvailability.isAvailable ? .green : .secondary)
                     }

@@ -53,7 +53,7 @@ final class LLMManager {
         // Try Apple Intelligence first if available (on-device, no network needed)
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, *) {
-            if await AppleIntelligenceAvailability.isAvailable {
+            if AppleIntelligenceAvailability.isAvailable {
                 let service = AppleIntelligenceService()
                 isLoading = true
                 defer { isLoading = false }
@@ -92,12 +92,70 @@ final class LLMManager {
     }
 
     /// Returns true when at least one LLM backend is usable (Apple Intelligence or configured API key).
-    @MainActor
     static func hasAvailableLLM(settings: Settings) -> Bool {
         if AppleIntelligenceAvailability.isAvailable {
             return true
         }
         return settings.hasActiveAPIKey
+    }
+
+    /// Streams the response token-by-token. Falls back to non-streaming if Apple Intelligence
+    /// is available (wraps single response as a single-chunk stream).
+    func streamPrompt(_ prompt: String, systemPrompt: String, settings: Settings) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                // Try Apple Intelligence first (supports native streaming)
+                #if canImport(FoundationModels)
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    if AppleIntelligenceAvailability.isAvailable {
+                        let service = AppleIntelligenceService()
+                        self.isLoading = true
+                        do {
+                            for try await chunk in service.streamPrompt(prompt, systemPrompt: systemPrompt) {
+                                continuation.yield(chunk)
+                            }
+                            self.isLoading = false
+                            continuation.finish()
+                            return
+                        } catch {
+                            self.isLoading = false
+                            // Fall through to cloud provider
+                        }
+                    }
+                }
+                #endif
+
+                // Cloud provider requires network
+                guard NetworkMonitor.shared.isConnected else {
+                    continuation.finish(throwing: LLMError.offline)
+                    return
+                }
+
+                guard settings.hasActiveAPIKey else {
+                    continuation.finish(throwing: LLMError.missingAPIKey)
+                    return
+                }
+
+                let service = self.createCloudService(for: settings)
+                self.isLoading = true
+                do {
+                    for try await chunk in service.streamPrompt(prompt, systemPrompt: systemPrompt) {
+                        continuation.yield(chunk)
+                    }
+                    self.isLoading = false
+                    continuation.finish()
+                } catch let error as LLMError {
+                    self.isLoading = false
+                    continuation.finish(throwing: error)
+                } catch let error as URLError {
+                    self.isLoading = false
+                    continuation.finish(throwing: LLMError.networkError(error))
+                } catch {
+                    self.isLoading = false
+                    continuation.finish(throwing: LLMError.networkError(error))
+                }
+            }
+        }
     }
 
     func testConnection(settings: Settings) async throws -> String {
