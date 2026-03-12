@@ -17,7 +17,9 @@ final class QuestionViewModel {
     private let systemPrompt = "You are a helpful multilingual assistant. Respond in the same language the user used to ask the question. Be concise and educational."
 
     var isAPIKeyError: Bool {
-        errorMessage == LLMError.missingAPIKey.errorDescription
+        guard let msg = errorMessage else { return false }
+        return msg == LLMError.missingAPIKey.errorDescription
+            || msg == LLMError.noLLMAvailable.errorDescription
     }
 
     var canSend: Bool {

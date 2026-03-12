@@ -30,7 +30,10 @@ final class TTSManager {
         defer { isSpeaking = false }
 
         let service: any TTSServiceProtocol
-        if settings.selectedTTSProvider == .openaiTTS {
+
+        // Use OpenAI TTS only if explicitly selected AND the API key is configured;
+        // otherwise always fall back to Apple Local TTS so the app works without keys.
+        if settings.selectedTTSProvider == .openaiTTS && !settings.openaiAPIKey.isEmpty {
             // Reuse same instance so AVAudioPlayer reference lives on
             if openAIService == nil || openAIService?.apiKey != settings.openaiAPIKey {
                 openAIService = OpenAITTSService(apiKey: settings.openaiAPIKey)
@@ -45,7 +48,14 @@ final class TTSManager {
         } catch is CancellationError {
             // Silently ignore
         } catch {
-            // Errors are surfaced via SpeakButton's own error handling
+            // If OpenAI TTS fails, fall back to Apple Local TTS
+            if settings.selectedTTSProvider == .openaiTTS {
+                do {
+                    try await appleService.speak(text: text, language: language)
+                } catch {
+                    // Final fallback failed — silently ignore
+                }
+            }
         }
     }
 

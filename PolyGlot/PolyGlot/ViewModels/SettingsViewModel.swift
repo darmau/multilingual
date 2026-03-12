@@ -10,6 +10,7 @@ final class SettingsViewModel {
     var selectedLLMProvider: LLMProvider = .openai
     var selectedTTSProvider: TTSProvider = .appleLocal
     var japaneseFuriganaLevel: JapaneseProficiency = .beginner
+    var useSystemDictionary: Bool = true
 
     var isTesting: Bool = false
     var testResultMessage: String = ""
@@ -25,6 +26,7 @@ final class SettingsViewModel {
         selectedLLMProvider = settings.selectedLLMProvider
         selectedTTSProvider = settings.selectedTTSProvider
         japaneseFuriganaLevel = settings.japaneseFuriganaLevel
+        useSystemDictionary = settings.useSystemDictionary
     }
 
     func save(to settings: Settings) {
@@ -34,6 +36,7 @@ final class SettingsViewModel {
         settings.selectedLLMProvider = selectedLLMProvider
         settings.selectedTTSProvider = selectedTTSProvider
         settings.japaneseFuriganaLevel = japaneseFuriganaLevel
+        settings.useSystemDictionary = useSystemDictionary
     }
 
     func testConnection(settings: Settings) async {

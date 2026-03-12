@@ -10,6 +10,9 @@ final class Settings {
     var selectedTTSProviderRaw: String
     var japaneseFuriganaLevelRaw: String
 
+    /// When true, dictionary mode also queries the system dictionary alongside LLM.
+    var useSystemDictionary: Bool
+
     var selectedLLMProvider: LLMProvider {
         get { LLMProvider(rawValue: selectedLLMProviderRaw) ?? .openai }
         set { selectedLLMProviderRaw = newValue.rawValue }
@@ -25,13 +28,28 @@ final class Settings {
         set { japaneseFuriganaLevelRaw = newValue.rawValue }
     }
 
+    /// Returns true when the currently selected LLM provider has a non-empty API key.
+    var hasActiveAPIKey: Bool {
+        switch selectedLLMProvider {
+        case .openai: return !openaiAPIKey.isEmpty
+        case .claude: return !claudeAPIKey.isEmpty
+        case .gemini: return !geminiAPIKey.isEmpty
+        }
+    }
+
+    /// Returns true when any LLM provider has a configured API key.
+    var hasAnyAPIKey: Bool {
+        !openaiAPIKey.isEmpty || !claudeAPIKey.isEmpty || !geminiAPIKey.isEmpty
+    }
+
     init(
         openaiAPIKey: String = "",
         claudeAPIKey: String = "",
         geminiAPIKey: String = "",
         selectedLLMProvider: LLMProvider = .openai,
         selectedTTSProvider: TTSProvider = .appleLocal,
-        japaneseFuriganaLevel: JapaneseProficiency = .beginner
+        japaneseFuriganaLevel: JapaneseProficiency = .beginner,
+        useSystemDictionary: Bool = true
     ) {
         self.openaiAPIKey = openaiAPIKey
         self.claudeAPIKey = claudeAPIKey
@@ -39,5 +57,6 @@ final class Settings {
         self.selectedLLMProviderRaw = selectedLLMProvider.rawValue
         self.selectedTTSProviderRaw = selectedTTSProvider.rawValue
         self.japaneseFuriganaLevelRaw = japaneseFuriganaLevel.rawValue
+        self.useSystemDictionary = useSystemDictionary
     }
 }

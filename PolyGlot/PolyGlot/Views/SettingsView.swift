@@ -19,6 +19,7 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    offlineCapabilitiesCard
                     apiKeysCard
                     providerCard
                     japaneseCard
@@ -38,6 +39,97 @@ struct SettingsView: View {
             .onChange(of: viewModel.selectedLLMProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.japaneseFuriganaLevel) { _, _ in viewModel.save(to: settings) }
+            .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
+        }
+    }
+
+    // MARK: - Offline Capabilities Card
+
+    private var offlineCapabilitiesCard: some View {
+        SettingsCard(
+            icon: "arrow.down.circle.fill",
+            title: "离线与本地能力",
+            subtitle: "无需 API Key 即可使用的功能",
+            iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
+        ) {
+            VStack(spacing: 12) {
+                // Apple Intelligence status
+                HStack(spacing: 12) {
+                    Image(systemName: "brain")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.purple)
+                        .frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Apple Intelligence")
+                            .font(.subheadline.weight(.medium))
+                        Text(AppleIntelligenceAvailability.isAvailable
+                             ? "可用 — 将优先使用设备端 AI"
+                             : "当前设备不支持")
+                            .font(.caption)
+                            .foregroundStyle(AppleIntelligenceAvailability.isAvailable ? .green : .secondary)
+                    }
+                    Spacer()
+                    Circle()
+                        .fill(AppleIntelligenceAvailability.isAvailable ? Color.green : Color.secondary.opacity(0.25))
+                        .frame(width: 7, height: 7)
+                }
+                .padding(.vertical, 4)
+
+                Divider().padding(.leading, 44)
+
+                // System Dictionary toggle
+                HStack(spacing: 12) {
+                    Image(systemName: "character.book.closed.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.blue)
+                        .frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("系统词典")
+                            .font(.subheadline.weight(.medium))
+                        Text("词典模式下同时显示系统词典释义")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $viewModel.useSystemDictionary)
+                        .labelsHidden()
+                }
+                .padding(.vertical, 4)
+
+                Divider().padding(.leading, 44)
+
+                // Local capabilities summary
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .frame(width: 28)
+                        Text("本地语音合成 (TTS)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .frame(width: 28)
+                        Text("Apple 翻译 (无需 API Key)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                            .frame(width: 28)
+                        Text("系统词典查词")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
     }
 
@@ -46,8 +138,8 @@ struct SettingsView: View {
     private var apiKeysCard: some View {
         SettingsCard(
             icon: "key.fill",
-            title: "API Keys",
-            subtitle: "配置各平台的访问密钥",
+            title: "API Keys（可选）",
+            subtitle: "配置后可使用云端 AI 深度分析",
             iconColor: Color(red: 0.95, green: 0.65, blue: 0.10)
         ) {
             VStack(spacing: 0) {

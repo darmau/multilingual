@@ -108,11 +108,20 @@ struct QuestionView: View {
                 .padding()
             }
         } else {
-            EmptyStateView(
-                systemImage: "questionmark.bubble",
-                title: "输入问题开始对话",
-                subtitle: "支持中文、英语、日语、韩语提问"
-            )
+            VStack(spacing: 16) {
+                EmptyStateView(
+                    systemImage: "questionmark.bubble",
+                    title: "输入问题开始对话",
+                    subtitle: "支持中文、英语、日语、韩语提问"
+                )
+                if !settings.hasActiveAPIKey && !AppleIntelligenceAvailability.isAvailable {
+                    Text("此功能需要配置 API Key 或使用支持 Apple Intelligence 的设备")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+            }
         }
     }
 
