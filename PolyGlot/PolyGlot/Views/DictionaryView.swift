@@ -254,21 +254,42 @@ struct DictionaryView: View {
     // MARK: - Input Word Header
 
     private func inputWordHeader(result: WordAnalysisResult) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(result.inputWord)
-                .font(.largeTitle.bold())
+        let lang = SupportedLanguage(rawValue: result.inputLanguage)
+        let phonetic: String? = {
+            if let lang, lang == .english {
+                return result.analyses.english?.phonetic
+            }
+            return nil
+        }()
 
-            if let lang = SupportedLanguage(rawValue: result.inputLanguage) {
-                SpeakButton(text: result.inputWord, language: lang)
-                    .font(.title2)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
+                Text(result.inputWord)
+                    .font(.system(size: 36, weight: .bold, design: .default))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.7)
+
+                if let lang {
+                    SpeakButton(text: result.inputWord, language: lang)
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                if let lang {
+                    LanguageBadge(language: lang)
+                }
             }
 
-            Spacer()
-
-            if let lang = SupportedLanguage(rawValue: result.inputLanguage) {
-                LanguageBadge(language: lang)
+            if let phonetic, !phonetic.isEmpty {
+                Text(phonetic)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .italic()
             }
         }
+        .padding(.bottom, 4)
     }
 
     // MARK: - Language Card Builder
@@ -361,37 +382,24 @@ private struct EnglishCard: View {
 
     var body: some View {
         LanguageSection(title: "English", color: .language(.english)) {
-            // Phonetic
-            if let phonetic = analysis.phonetic, !phonetic.isEmpty {
-                InfoRow(label: "音标", value: phonetic)
-            }
-
-            // Definitions
+            // Definitions (phonetic is now in the top header)
             if !analysis.definitions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("释义").font(.subheadline.bold()).foregroundStyle(.secondary)
-                    ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { _, def in
-                        DefinitionRow(
-                            pos: def.pos,
-                            meaning: def.meaning,
-                            example: def.example,
-                            exampleLanguage: .english
-                        )
-                    }
-                }
+                DefinitionList(definitions: analysis.definitions.map {
+                    AnyDefinition(pos: $0.pos, meaning: $0.meaning, example: $0.example)
+                }, language: .english)
             }
 
             // Etymology
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                InfoRow(label: "词源", value: etymology)
+                MetaRow(label: "词源", value: etymology)
             }
 
             // Synonyms / Antonyms
             if let synonyms = analysis.synonyms, !synonyms.isEmpty {
-                WordListRow(label: "近义词", words: synonyms, language: .english)
+                WordChipRow(label: "近义词", words: synonyms, language: .english)
             }
             if let antonyms = analysis.antonyms, !antonyms.isEmpty {
-                WordListRow(label: "反义词", words: antonyms, language: .english)
+                WordChipRow(label: "反义词", words: antonyms, language: .english)
             }
         }
     }
@@ -404,17 +412,20 @@ private struct ChineseCard: View {
 
     var body: some View {
         LanguageSection(title: "中文", color: .language(.chinese)) {
-            HStack {
-                Text(analysis.word)
-                    .font(.title2.bold())
-                // No SpeakButton for Chinese
-            }
-
             if !analysis.definitions.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { _, def in
-                        Text(def.meaning)
-                            .font(.body)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { i, def in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(i + 1)")
+                                .font(.caption.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 18, height: 18)
+                                .background(Color.language(.chinese))
+                                .clipShape(Circle())
+                            Text(def.meaning)
+                                .font(.body)
+                                .textSelection(.enabled)
+                        }
                     }
                 }
             }
@@ -430,46 +441,48 @@ private struct JapaneseCard: View {
 
     var body: some View {
         LanguageSection(title: "日本語", color: .language(.japanese)) {
-            // Word + reading + speak
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                FuriganaText(analysis.word, font: .title2)
-                    .fontWeight(.bold)
-                SpeakButton(text: FuriganaParser.plainText(from: FuriganaParser.parse(analysis.word)),
-                            language: .japanese)
+            // Word + reading header
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    FuriganaText(analysis.word, font: .title2)
+                        .fontWeight(.bold)
+                    if let reading = analysis.reading, !reading.isEmpty {
+                        Text(reading)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .japaneseLocale()
+                    }
+                }
+                SpeakButton(
+                    text: FuriganaParser.plainText(from: FuriganaParser.parse(analysis.word)),
+                    language: .japanese
+                )
+                .font(.title3)
+                .foregroundStyle(.secondary)
             }
 
             // Definitions
             if !analysis.definitions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("释义").font(.subheadline.bold()).foregroundStyle(.secondary)
-                    ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { _, def in
-                        DefinitionRow(
-                            pos: def.pos,
-                            meaning: def.meaning,
-                            example: def.example,
-                            exampleLanguage: .japanese,
-                            exampleReading: def.exampleReading
-                        )
-                    }
-                }
+                DefinitionList(definitions: analysis.definitions.map {
+                    AnyDefinition(pos: $0.pos, meaning: $0.meaning, example: $0.example,
+                                  exampleReading: $0.exampleReading)
+                }, language: .japanese)
             }
 
-            // Etymology
+            // Etymology / Conjugation
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                InfoRow(label: "词源", value: etymology, valueLanguage: .japanese)
+                MetaRow(label: "词源", value: etymology, valueLanguage: .japanese)
             }
-
-            // Conjugation
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
-                InfoRow(label: "变形", value: conjugation, valueLanguage: .japanese)
+                MetaRow(label: "变形", value: conjugation, valueLanguage: .japanese)
             }
 
             // Synonyms / Antonyms
             if let synonyms = analysis.synonyms, !synonyms.isEmpty {
-                WordListRow(label: "近义词", words: synonyms, language: .japanese)
+                WordChipRow(label: "近义词", words: synonyms, language: .japanese)
             }
             if let antonyms = analysis.antonyms, !antonyms.isEmpty {
-                WordListRow(label: "反义词", words: antonyms, language: .japanese)
+                WordChipRow(label: "反义词", words: antonyms, language: .japanese)
             }
         }
     }
@@ -482,43 +495,35 @@ private struct KoreanCard: View {
 
     var body: some View {
         LanguageSection(title: "한국어", color: .language(.korean)) {
-            // Word + reading + speak
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+            // Word + reading header
+            HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(analysis.word)
                         .font(.title2.bold())
                     if let reading = analysis.reading, !reading.isEmpty {
                         Text(reading)
-                            .font(.caption)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
                 SpeakButton(text: analysis.word, language: .korean)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
             }
 
             // Definitions
             if !analysis.definitions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("释义").font(.subheadline.bold()).foregroundStyle(.secondary)
-                    ForEach(Array(analysis.definitions.enumerated()), id: \.offset) { _, def in
-                        DefinitionRow(
-                            pos: def.pos,
-                            meaning: def.meaning,
-                            example: def.example,
-                            exampleLanguage: .korean
-                        )
-                    }
-                }
+                DefinitionList(definitions: analysis.definitions.map {
+                    AnyDefinition(pos: $0.pos, meaning: $0.meaning, example: $0.example)
+                }, language: .korean)
             }
 
-            // Etymology
+            // Etymology / Conjugation
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                InfoRow(label: "词源", value: etymology)
+                MetaRow(label: "词源", value: etymology)
             }
-
-            // Conjugation
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
-                InfoRow(label: "变形", value: conjugation)
+                MetaRow(label: "变形", value: conjugation)
             }
         }
     }
@@ -526,133 +531,191 @@ private struct KoreanCard: View {
 
 // MARK: - Shared Sub-components
 
-/// A card section per language using the shared cardStyle modifier.
+/// A type-erased definition entry used by DefinitionList.
+private struct AnyDefinition {
+    var pos: String?
+    var meaning: String
+    var example: String?
+    var exampleReading: String? = nil
+}
+
+/// A card section per language with a colored left-border accent.
 private struct LanguageSection<Content: View>: View {
     let title: String
     let color: Color
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(color)
-                .padding(.bottom, 2)
-            content()
-        }
-        .cardStyle(accentColor: color)
-    }
-}
-
-private struct InfoRow: View {
-    let label: String
-    let value: String
-    /// Language of the value text — used to apply correct CJK glyph variant.
-    var valueLanguage: SupportedLanguage = .english
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .font(.caption.bold())
-                .foregroundStyle(.secondary)
-                .chineseLocale()                // UI labels are always Chinese
-            Text(value)
-                .font(.body)
-                .textSelection(.enabled)
-                .modifier(LanguageLocaleModifier(language: valueLanguage))
-        }
-    }
-}
-
-private struct DefinitionRow: View {
-    let pos: String?
-    let meaning: String
-    let example: String?
-    let exampleLanguage: SupportedLanguage
-    var exampleReading: String? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if let pos, !pos.isEmpty {
-                    Text(pos)
-                        .font(.caption.bold())
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.quaternary)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                        .modifier(LanguageLocaleModifier(language: exampleLanguage))
-                }
-                // Meanings are always written in Chinese (per CLAUDE.md rules)
-                Text(meaning)
-                    .font(.body)
-                    .textSelection(.enabled)
-                    .chineseLocale()
+        VStack(alignment: .leading, spacing: 0) {
+            // Language header bar
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(color)
+                    .frame(width: 3, height: 16)
+                Text(title)
+                    .font(.subheadline.bold())
+                    .foregroundStyle(color)
             }
+            .padding(.bottom, 12)
 
-            if let example, !example.isEmpty {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        if exampleLanguage == .japanese {
-                            // FuriganaText internally sets japaneseLocale
-                            FuriganaText(example, font: .subheadline)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text(example)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .italic()
+            VStack(alignment: .leading, spacing: 14) {
+                content()
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.background.secondary)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .strokeBorder(color.opacity(0.18), lineWidth: 1)
+        )
+    }
+}
+
+/// Numbered definition list with pos pill, meaning, and example.
+private struct DefinitionList: View {
+    let definitions: [AnyDefinition]
+    let language: SupportedLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(Array(definitions.enumerated()), id: \.offset) { index, def in
+                HStack(alignment: .top, spacing: 10) {
+                    // Index number
+                    Text("\(index + 1)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(Color.language(language))
+                        .frame(width: 18, height: 18)
+                        .background(Color.language(language).opacity(0.12))
+                        .clipShape(Circle())
+                        .padding(.top, 2)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        // POS pill + meaning
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            if let pos = def.pos, !pos.isEmpty {
+                                Text(pos)
+                                    .font(.caption.bold())
+                                    .foregroundStyle(Color.language(language))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2)
+                                    .background(Color.language(language).opacity(0.10))
+                                    .clipShape(Capsule())
+                                    .modifier(LanguageLocaleModifier(language: language))
+                            }
+                            Text(def.meaning)
+                                .font(.body)
                                 .textSelection(.enabled)
-                                .modifier(LanguageLocaleModifier(language: exampleLanguage))
+                                .chineseLocale()
+                        }
+
+                        // Example sentence with accent bar
+                        if let example = def.example, !example.isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(Color.language(language).opacity(0.4))
+                                    .frame(width: 2)
+                                    .padding(.vertical, 1)
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    if language == .japanese {
+                                        FuriganaText(example, font: .subheadline)
+                                            .foregroundStyle(.secondary)
+                                    } else {
+                                        Text(example)
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                            .textSelection(.enabled)
+                                            .modifier(LanguageLocaleModifier(language: language))
+                                    }
+                                }
+
+                                SpeakButton(
+                                    text: language == .japanese
+                                        ? FuriganaParser.plainText(from: FuriganaParser.parse(example))
+                                        : example,
+                                    language: language
+                                )
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                            }
+                            .padding(.leading, 2)
                         }
                     }
-                    SpeakButton(
-                        text: exampleLanguage == .japanese
-                            ? FuriganaParser.plainText(from: FuriganaParser.parse(example))
-                            : example,
-                        language: exampleLanguage
-                    )
-                    .font(.caption)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(accessibilityLabel(for: def))
             }
         }
-        .padding(.leading, 4)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityDescription)
     }
 
-    private var accessibilityDescription: String {
+    private func accessibilityLabel(for def: AnyDefinition) -> String {
         var parts: [String] = []
-        if let pos, !pos.isEmpty { parts.append(pos) }
-        parts.append(meaning)
-        if let example, !example.isEmpty { parts.append("例句: \(FuriganaParser.plainText(from: FuriganaParser.parse(example)))") }
+        if let pos = def.pos, !pos.isEmpty { parts.append(pos) }
+        parts.append(def.meaning)
+        if let ex = def.example, !ex.isEmpty {
+            parts.append("例句: \(FuriganaParser.plainText(from: FuriganaParser.parse(ex)))")
+        }
         return parts.joined(separator: "，")
     }
 }
 
-private struct WordListRow: View {
+/// A label/value metadata row (etymology, conjugation, etc.).
+private struct MetaRow: View {
+    let label: String
+    let value: String
+    var valueLanguage: SupportedLanguage = .english
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .chineseLocale()
+            Text(value)
+                .font(.subheadline)
+                .textSelection(.enabled)
+                .modifier(LanguageLocaleModifier(language: valueLanguage))
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+/// Horizontally-scrolling chip row for synonyms / antonyms.
+private struct WordChipRow: View {
     let label: String
     let words: [String]
     let language: SupportedLanguage
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
+                .chineseLocale()
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(words, id: \.self) { word in
                         HStack(spacing: 4) {
                             Text(word)
                                 .font(.subheadline)
+                                .modifier(LanguageLocaleModifier(language: language))
                             SpeakButton(text: word, language: language)
-                                .font(.caption)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(.quaternary)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .background(Color.language(language).opacity(0.08))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Color.language(language).opacity(0.2), lineWidth: 1)
+                        )
                     }
                 }
             }
