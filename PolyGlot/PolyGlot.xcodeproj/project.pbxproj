@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D309DC62F62775D001EF339 /* AppleDictionaryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D309DC52F62775D001EF339 /* AppleDictionaryService.swift */; };
+		0D309DC82F627762001EF339 /* AppleIntelligenceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D309DC72F627762001EF339 /* AppleIntelligenceService.swift */; };
 		0DC05E3D2F625912009DD4F5 /* WordAnalysisResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */; };
 		0DC05E3F2F62592D009DD4F5 /* PromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E3E2F62592D009DD4F5 /* PromptBuilder.swift */; };
 		0DC05E412F625B4B009DD4F5 /* SentenceAnalysisResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E402F625B4B009DD4F5 /* SentenceAnalysisResult.swift */; };
@@ -51,6 +53,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0D309DC52F62775D001EF339 /* AppleDictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleDictionaryService.swift; sourceTree = "<group>"; };
+		0D309DC72F627762001EF339 /* AppleIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceService.swift; sourceTree = "<group>"; };
 		0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordAnalysisResult.swift; sourceTree = "<group>"; };
 		0DC05E3E2F62592D009DD4F5 /* PromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptBuilder.swift; sourceTree = "<group>"; };
 		0DC05E402F625B4B009DD4F5 /* SentenceAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceAnalysisResult.swift; sourceTree = "<group>"; };
@@ -190,6 +194,8 @@
 				A20000280000000000000022 /* TTSManager.swift */,
 				0DC05E3E2F62592D009DD4F5 /* PromptBuilder.swift */,
 				0DC05E512F6261B1009DD4F5 /* NetworkMonitor.swift */,
+				0D309DC52F62775D001EF339 /* AppleDictionaryService.swift */,
+				0D309DC72F627762001EF339 /* AppleIntelligenceService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -317,12 +323,14 @@
 				0DC05E482F625CF6009DD4F5 /* JLPTKanjiSet.swift in Sources */,
 				A1000020000000000000001A /* LLMServiceProtocol.swift in Sources */,
 				A1000021000000000000001B /* TTSServiceProtocol.swift in Sources */,
+				0D309DC82F627762001EF339 /* AppleIntelligenceService.swift in Sources */,
 				0DC05E3D2F625912009DD4F5 /* WordAnalysisResult.swift in Sources */,
 				A1000022000000000000001C /* OpenAIService.swift in Sources */,
 				0DC05E502F625EAF009DD4F5 /* QueryHistory.swift in Sources */,
 				A1000023000000000000001D /* ClaudeService.swift in Sources */,
 				A1000024000000000000001E /* GeminiService.swift in Sources */,
 				A1000025000000000000001F /* LLMManager.swift in Sources */,
+				0D309DC62F62775D001EF339 /* AppleDictionaryService.swift in Sources */,
 				0DC05E4E2F625E7A009DD4F5 /* Components.swift in Sources */,
 				A10000260000000000000020 /* OpenAITTSService.swift in Sources */,
 				0DC05E432F625CC4009DD4F5 /* FuriganaParser.swift in Sources */,
