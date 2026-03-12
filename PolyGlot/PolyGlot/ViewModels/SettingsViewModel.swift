@@ -11,6 +11,13 @@ final class SettingsViewModel {
     var selectedTTSProvider: TTSProvider = .appleLocal
     var japaneseFuriganaLevel: JapaneseProficiency = .beginner
 
+    var isTesting: Bool = false
+    var testResultMessage: String = ""
+    var testResultIsSuccess: Bool = false
+    var showTestResult: Bool = false
+
+    private let llmManager = LLMManager()
+
     func load(from settings: Settings) {
         openaiAPIKey = settings.openaiAPIKey
         claudeAPIKey = settings.claudeAPIKey
@@ -27,5 +34,22 @@ final class SettingsViewModel {
         settings.selectedLLMProvider = selectedLLMProvider
         settings.selectedTTSProvider = selectedTTSProvider
         settings.japaneseFuriganaLevel = japaneseFuriganaLevel
+    }
+
+    func testConnection(settings: Settings) async {
+        isTesting = true
+        showTestResult = false
+
+        do {
+            let reply = try await llmManager.testConnection(settings: settings)
+            testResultMessage = "连接成功: \(reply)"
+            testResultIsSuccess = true
+        } catch {
+            testResultMessage = error.localizedDescription
+            testResultIsSuccess = false
+        }
+
+        isTesting = false
+        showTestResult = true
     }
 }
