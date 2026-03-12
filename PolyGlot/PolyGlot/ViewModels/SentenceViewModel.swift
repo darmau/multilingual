@@ -12,6 +12,11 @@ final class SentenceViewModel {
     var errorMessage: String? = nil
 
     private let llmManager = LLMManager()
+    private var currentTask: Task<Void, Never>?
+
+    var isAPIKeyError: Bool {
+        errorMessage == LLMError.missingAPIKey.errorDescription
+    }
 
     var effectiveLanguage: SupportedLanguage? {
         manualLanguage ?? detectedLanguage
@@ -26,7 +31,12 @@ final class SentenceViewModel {
         detectedLanguage = LanguageDetector.detect(text)
     }
 
-    func analyze(settings: Settings) async {
+    func analyze(settings: Settings) {
+        currentTask?.cancel()
+        currentTask = Task { await _analyze(settings: settings) }
+    }
+
+    private func _analyze(settings: Settings) async {
         let sentence = inputText.trimmingCharacters(in: .whitespaces)
         guard !sentence.isEmpty else { return }
 
@@ -52,13 +62,18 @@ final class SentenceViewModel {
         let systemPrompt = PromptBuilder.sentenceSystemPrompt
 
         do {
-            let responseText = try await llmManager.sendPrompt(prompt, systemPrompt: systemPrompt, settings: settings)
+            let responseText = try await llmManager.sendPrompt(
+                prompt, systemPrompt: systemPrompt, settings: settings)
+            guard !Task.isCancelled else { return }
             rawResponse = responseText
             result = parseResult(from: responseText)
             if result == nil {
                 errorMessage = "无法解析响应，请重试。"
             }
+        } catch is CancellationError {
+            // Silently ignore cancellation
         } catch {
+            guard !Task.isCancelled else { return }
             errorMessage = error.localizedDescription
         }
     }
@@ -77,11 +92,13 @@ final class SentenceViewModel {
     }
 
     func reset() {
+        currentTask?.cancel()
         inputText = ""
         detectedLanguage = nil
         manualLanguage = nil
         result = nil
         rawResponse = nil
         errorMessage = nil
+        isLoading = false
     }
 }

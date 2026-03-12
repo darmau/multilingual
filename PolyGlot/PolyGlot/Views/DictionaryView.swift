@@ -23,6 +23,12 @@ struct DictionaryView: View {
                 resultArea
             }
             .navigationTitle("词典")
+            .onChange(of: viewModel.result?.inputWord) { _, newWord in
+                guard let newWord, !newWord.isEmpty,
+                      let lang = viewModel.effectiveLanguage else { return }
+                let entry = QueryHistory(text: newWord, language: lang, mode: .dictionary)
+                modelContext.insert(entry)
+            }
         }
     }
 
@@ -58,6 +64,9 @@ struct DictionaryView: View {
                         .font(.title3)
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return, modifiers: .command)
+                .accessibilityLabel("查词")
+                .accessibilityHint("查询单词的释义和语法信息")
                 .disabled(viewModel.searchText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal)
@@ -105,7 +114,8 @@ struct DictionaryView: View {
                 ErrorBanner(
                     message: errorMessage,
                     rawResponse: viewModel.rawResponse,
-                    retryAction: { submitSearch() }
+                    retryAction: { submitSearch() },
+                    isAPIKeyError: viewModel.isAPIKeyError
                 )
                 .padding()
             }
@@ -230,14 +240,7 @@ struct DictionaryView: View {
     private func submitSearch() {
         let word = viewModel.searchText.trimmingCharacters(in: .whitespaces)
         guard !word.isEmpty else { return }
-        Task {
-            await viewModel.analyze(settings: settings)
-            // Save to history on success
-            if viewModel.result != nil, let lang = viewModel.effectiveLanguage {
-                let entry = QueryHistory(text: word, language: lang, mode: .dictionary)
-                modelContext.insert(entry)
-            }
-        }
+        viewModel.analyze(settings: settings)
     }
 
     private func outputLanguages(for input: SupportedLanguage?) -> [SupportedLanguage] {
@@ -499,6 +502,16 @@ private struct DefinitionRow: View {
             }
         }
         .padding(.leading, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    private var accessibilityDescription: String {
+        var parts: [String] = []
+        if let pos, !pos.isEmpty { parts.append(pos) }
+        parts.append(meaning)
+        if let example, !example.isEmpty { parts.append("例句: \(FuriganaParser.plainText(from: FuriganaParser.parse(example)))") }
+        return parts.joined(separator: "，")
     }
 }
 

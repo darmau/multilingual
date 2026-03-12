@@ -24,6 +24,8 @@ struct LanguageBadge: View {
                     lineWidth: 1
                 )
             )
+            .accessibilityLabel("\(language.displayName)语言")
+            .accessibilityAddTraits(.isStaticText)
     }
 }
 
@@ -49,12 +51,16 @@ struct LoadingView: View {
 // MARK: - ErrorBanner
 
 /// Inline error banner with a retry action.
+/// When `isAPIKeyError` is true, an extra tappable prompt to open Settings is shown.
 struct ErrorBanner: View {
     let message: String
     var rawResponse: String? = nil
     var retryAction: (() -> Void)? = nil
+    /// Set to true when the error requires the user to go set up an API key.
+    var isAPIKeyError: Bool = false
 
     @State private var showRaw = false
+    @Environment(\.navigateToSettings) private var navigateToSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -72,6 +78,10 @@ struct ErrorBanner: View {
                         .multilineTextAlignment(.leading)
                 }
                 Spacer()
+            }
+
+            if isAPIKeyError {
+                APIKeyMissingBanner(navigateToSettings: navigateToSettings)
             }
 
             HStack(spacing: 10) {
@@ -186,6 +196,59 @@ struct EmptyStateView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - OfflineBanner
+
+/// Thin banner shown at the top of the screen when the device has no network.
+struct OfflineBanner: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.caption.bold())
+            Text("无网络连接")
+                .font(.caption.bold())
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.9))
+        .foregroundStyle(.white)
+    }
+}
+
+// MARK: - APIKeyMissingBanner
+
+/// Banner shown when a request fails because API key is missing.
+/// Tapping it navigates the user to the Settings tab.
+struct APIKeyMissingBanner: View {
+    var navigateToSettings: () -> Void
+
+    var body: some View {
+        Button(action: navigateToSettings) {
+            HStack(spacing: 8) {
+                Image(systemName: "key.slash")
+                    .font(.subheadline)
+                Text("API Key 未设置 — 点击前往设置")
+                    .font(.subheadline.bold())
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+            }
+            .padding(12)
+            .background(Color.red.opacity(0.1))
+            .foregroundStyle(Color.red)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.red.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("API Key 未设置，点击前往设置")
+        .accessibilityHint("前往设置页面填写 API Key")
+        .accessibilityAddTraits(.isButton)
     }
 }
 

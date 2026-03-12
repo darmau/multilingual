@@ -23,6 +23,12 @@ struct SentenceView: View {
                 resultArea
             }
             .navigationTitle("句子分析")
+            .onChange(of: viewModel.result?.inputSentence) { _, newSentence in
+                guard let newSentence, !newSentence.isEmpty,
+                      let lang = viewModel.effectiveLanguage else { return }
+                let entry = QueryHistory(text: newSentence, language: lang, mode: .sentence)
+                modelContext.insert(entry)
+            }
         }
     }
 
@@ -102,6 +108,9 @@ struct SentenceView: View {
                     Label("分析", systemImage: "doc.text.magnifyingglass")
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return, modifiers: .command)
+                .accessibilityLabel("分析句子")
+                .accessibilityHint("发送到 AI 进行语法分析")
                 .disabled(viewModel.inputText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal)
@@ -121,7 +130,8 @@ struct SentenceView: View {
                 ErrorBanner(
                     message: error,
                     rawResponse: viewModel.rawResponse,
-                    retryAction: { submitAnalysis() }
+                    retryAction: { submitAnalysis() },
+                    isAPIKeyError: viewModel.isAPIKeyError
                 )
                 .padding()
             }
@@ -229,14 +239,7 @@ struct SentenceView: View {
     private func submitAnalysis() {
         let sentence = viewModel.inputText.trimmingCharacters(in: .whitespaces)
         guard !sentence.isEmpty else { return }
-        Task {
-            await viewModel.analyze(settings: settings)
-            // Save to history on success
-            if viewModel.result != nil, let lang = viewModel.effectiveLanguage {
-                let entry = QueryHistory(text: sentence, language: lang, mode: .sentence)
-                modelContext.insert(entry)
-            }
-        }
+        viewModel.analyze(settings: settings)
     }
 }
 

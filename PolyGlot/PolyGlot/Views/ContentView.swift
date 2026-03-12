@@ -39,13 +39,32 @@ struct ContentView: View {
     @State private var selectedTab: AppTab = .dictionary
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    /// Shared NetworkMonitor — observed for the offline banner.
+    private let network = NetworkMonitor.shared
+
     var body: some View {
-        // On compact width (iPhone) use TabView; on regular width (iPad/Mac) use sidebar.
-        if horizontalSizeClass == .compact {
-            compactLayout
-        } else {
-            regularLayout
+        ZStack(alignment: .top) {
+            // Main layout
+            if horizontalSizeClass == .compact {
+                compactLayout
+            } else {
+                regularLayout
+            }
+
+            // Offline banner overlaid at the very top
+            if !network.isConnected {
+                VStack {
+                    OfflineBanner()
+                    Spacer()
+                }
+                .ignoresSafeArea(edges: .horizontal)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(100)
+                .animation(.spring(duration: 0.3), value: network.isConnected)
+            }
         }
+        // Allow any child view to navigate to Settings for API key setup
+        .environment(\.navigateToSettings, { selectedTab = .settings })
     }
 
     // MARK: - Compact (iPhone) — TabView
@@ -86,6 +105,19 @@ struct ContentView: View {
         case .question:     QuestionView()
         case .settings:     SettingsView()
         }
+    }
+}
+
+// MARK: - Environment Key: navigateToSettings
+
+private struct NavigateToSettingsKey: EnvironmentKey {
+    static let defaultValue: () -> Void = {}
+}
+
+extension EnvironmentValues {
+    var navigateToSettings: () -> Void {
+        get { self[NavigateToSettingsKey.self] }
+        set { self[NavigateToSettingsKey.self] = newValue }
     }
 }
 

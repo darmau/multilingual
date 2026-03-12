@@ -6,6 +6,7 @@ struct TranslationView: View {
     @State private var viewModel = TranslationViewModel()
     @Query private var settingsList: [Settings]
     @FocusState private var isEditorFocused: Bool
+    @Environment(\.navigateToSettings) private var navigateToSettings
 
     private var settings: Settings {
         settingsList.first ?? Settings()
@@ -103,14 +104,15 @@ struct TranslationView: View {
                         viewModel.prepareLocalTranslation()
                     }
                 } else {
-                    Task {
-                        await viewModel.translateWithLLM(settings: settings)
-                    }
+                    viewModel.translateWithLLM(settings: settings)
                 }
             } label: {
                 Label("翻译", systemImage: "arrow.right.circle.fill")
             }
             .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.return, modifiers: .command)
+            .accessibilityLabel("翻译")
+            .accessibilityHint("将源语言文本翻译为目标语言")
             .disabled(!viewModel.canTranslate)
         }
         .padding(.horizontal)
@@ -162,10 +164,15 @@ struct TranslationView: View {
             }
             .padding(.vertical, 16)
         } else if let error = viewModel.errorMessage {
-            Label(error, systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.orange)
-                .font(.subheadline)
-                .padding(4)
+            VStack(alignment: .leading, spacing: 8) {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                    .font(.subheadline)
+                if viewModel.isAPIKeyError {
+                    APIKeyMissingBanner(navigateToSettings: navigateToSettings)
+                }
+            }
+            .padding(4)
         } else if !viewModel.translatedText.isEmpty {
             // Use FuriganaText for Japanese results
             if viewModel.targetLanguage == .japanese {

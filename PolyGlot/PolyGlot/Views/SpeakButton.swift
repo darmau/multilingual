@@ -6,7 +6,6 @@ struct SpeakButton: View {
     let language: SupportedLanguage
 
     @State private var ttsManager = TTSManager()
-    @State private var errorMessage: String?
     @Query private var settingsList: [Settings]
 
     private var settings: Settings {
@@ -16,8 +15,10 @@ struct SpeakButton: View {
     var body: some View {
         if language != .chinese {
             Button {
-                Task {
-                    await speak()
+                if ttsManager.isSpeaking {
+                    ttsManager.stop()
+                } else {
+                    ttsManager.speak(text: text, language: language, settings: settings)
                 }
             } label: {
                 Group {
@@ -30,27 +31,9 @@ struct SpeakButton: View {
                 }
                 .font(.body)
             }
-            .disabled(ttsManager.isSpeaking)
-            .accessibilityLabel("朗读")
-            .alert("朗读失败", isPresented: .init(
-                get: { errorMessage != nil },
-                set: { if !$0 { errorMessage = nil } }
-            )) {
-                Button("确定", role: .cancel) { }
-            } message: {
-                if let errorMessage {
-                    Text(errorMessage)
-                }
-            }
-        }
-    }
-
-    private func speak() async {
-        errorMessage = nil
-        do {
-            try await ttsManager.speak(text: text, language: language, settings: settings)
-        } catch {
-            errorMessage = error.localizedDescription
+            .buttonStyle(.plain)
+            .accessibilityLabel(ttsManager.isSpeaking ? "停止朗读" : "朗读")
+            .accessibilityHint(ttsManager.isSpeaking ? "点击停止" : "点击朗读此文本")
         }
     }
 }

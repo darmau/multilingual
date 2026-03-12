@@ -17,6 +17,11 @@ final class TranslationViewModel {
     var translationConfiguration: Any?
 
     private let llmManager = LLMManager()
+    private var currentTask: Task<Void, Never>?
+
+    var isAPIKeyError: Bool {
+        errorMessage == LLMError.missingAPIKey.errorDescription
+    }
 
     var canTranslate: Bool {
         !sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -38,7 +43,12 @@ final class TranslationViewModel {
 
     // MARK: - Cloud Translation (LLM)
 
-    func translateWithLLM(settings: Settings) async {
+    func translateWithLLM(settings: Settings) {
+        currentTask?.cancel()
+        currentTask = Task { await _translateWithLLM(settings: settings) }
+    }
+
+    private func _translateWithLLM(settings: Settings) async {
         let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
@@ -46,16 +56,20 @@ final class TranslationViewModel {
         errorMessage = nil
         translatedText = ""
 
+        defer { isLoading = false }
+
         let systemPrompt = "You are a professional translator. Translate the following text from \(sourceLanguage.displayName) to \(targetLanguage.displayName). Output ONLY the translated text, no explanations."
 
         do {
             let result = try await llmManager.sendPrompt(text, systemPrompt: systemPrompt, settings: settings)
+            guard !Task.isCancelled else { return }
             translatedText = result.trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch is CancellationError {
+            // Silently ignore cancellation
         } catch {
+            guard !Task.isCancelled else { return }
             errorMessage = error.localizedDescription
         }
-
-        isLoading = false
     }
 
     // MARK: - Local Translation (Apple Translation API)
@@ -76,19 +90,21 @@ final class TranslationViewModel {
         errorMessage = nil
         translatedText = ""
 
+        defer { isLoading = false }
+
         do {
             let response = try await session.translate(text)
             translatedText = response.targetText
         } catch {
             errorMessage = "本地翻译失败: \(error.localizedDescription)"
         }
-
-        isLoading = false
     }
 
     func clear() {
+        currentTask?.cancel()
         sourceText = ""
         translatedText = ""
         errorMessage = nil
+        isLoading = false
     }
 }

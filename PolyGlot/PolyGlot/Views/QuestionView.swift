@@ -59,6 +59,9 @@ struct QuestionView: View {
                     Label("发送", systemImage: "paperplane.fill")
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.return, modifiers: .command)
+                .accessibilityLabel("发送问题")
+                .accessibilityHint("发送到 AI 获取回答")
                 .disabled(!viewModel.canSend)
             }
         }
@@ -74,7 +77,8 @@ struct QuestionView: View {
             LoadingView(message: "思考中...")
         } else if let error = viewModel.errorMessage {
             ScrollView {
-                ErrorBanner(message: error, retryAction: { sendQuestion() })
+                ErrorBanner(message: error, retryAction: { sendQuestion() },
+                            isAPIKeyError: viewModel.isAPIKeyError)
                     .padding()
             }
         } else if !viewModel.answerText.isEmpty {
@@ -115,7 +119,7 @@ struct QuestionView: View {
     private func sendQuestion() {
         guard viewModel.canSend else { return }
         isEditorFocused = false
-        Task { await viewModel.send(settings: settings) }
+        viewModel.send(settings: settings)
     }
 }
 

@@ -3,6 +3,7 @@ import Observation
 
 enum LLMError: LocalizedError {
     case missingAPIKey
+    case offline
     case invalidURL
     case invalidResponse
     case apiError(statusCode: Int, message: String)
@@ -12,7 +13,9 @@ enum LLMError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "API Key 未设置，请在设置中填写对应的 API Key。"
+            return "API Key 未设置，请在「设置」中填写对应的 API Key。"
+        case .offline:
+            return "网络不可用，请检查您的网络连接。"
         case .invalidURL:
             return "请求 URL 无效。"
         case .invalidResponse:
@@ -25,6 +28,12 @@ enum LLMError: LocalizedError {
             return "网络错误: \(error.localizedDescription)"
         }
     }
+
+    /// Returns true when the error is actionable by going to Settings.
+    var requiresSettingsNavigation: Bool {
+        if case .missingAPIKey = self { return true }
+        return false
+    }
 }
 
 @Observable
@@ -32,6 +41,11 @@ final class LLMManager {
     private(set) var isLoading = false
 
     func sendPrompt(_ prompt: String, systemPrompt: String, settings: Settings) async throws -> String {
+        // Guard: network reachability
+        guard NetworkMonitor.shared.isConnected else {
+            throw LLMError.offline
+        }
+
         let service = createService(for: settings)
         isLoading = true
         defer { isLoading = false }

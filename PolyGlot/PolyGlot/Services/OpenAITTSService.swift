@@ -2,7 +2,7 @@ import Foundation
 import AVFoundation
 
 final class OpenAITTSService: TTSServiceProtocol {
-    private let apiKey: String
+    let apiKey: String
     private var audioPlayer: AVAudioPlayer?
 
     init(apiKey: String) {
