@@ -726,7 +726,7 @@ private struct SystemDictionaryCard: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Image(systemName: "chevron.right")
+                        Image(systemName: "chevron.forward")
                             .font(.caption.bold())
                             .foregroundStyle(.tertiary)
                     }

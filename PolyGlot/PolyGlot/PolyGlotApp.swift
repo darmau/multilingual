@@ -6,10 +6,21 @@ struct PolyGlotApp: App {
     let modelContainer: ModelContainer
 
     init() {
+        let schema = Schema([Settings.self, QueryHistory.self])
+        let config = ModelConfiguration(schema: schema)
         do {
-            modelContainer = try ModelContainer(for: Settings.self, QueryHistory.self)
+            modelContainer = try ModelContainer(for: schema, configurations: config)
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Schema migration failed — delete the store and recreate from scratch.
+            let storeURL = config.url
+            try? FileManager.default.removeItem(at: storeURL)
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
+            try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
+            do {
+                modelContainer = try ModelContainer(for: schema, configurations: config)
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
 
         // Seed a single Settings object if none exists, so @Query is never empty.
@@ -37,8 +48,12 @@ struct PolyGlotApp: App {
     }
 }
 
-/// Root view that applies the user's chosen interface language (locale + layout direction)
-/// before rendering the main content.
+/// Root view that applies the user's chosen interface language.
+///
+/// Setting only `.locale` is the correct Apple-recommended approach: SwiftUI
+/// automatically derives the layout direction from the locale, so leading/trailing
+/// semantics, text alignment, and SF Symbol mirroring all work correctly without
+/// any manual `.layoutDirection` override.
 private struct RootView: View {
     @Query private var settingsList: [Settings]
 
@@ -47,14 +62,11 @@ private struct RootView: View {
     }
 
     var body: some View {
-        Group {
-            if let locale = interfaceLanguage.locale {
-                ContentView()
-                    .environment(\.locale, locale)
-                    .environment(\.layoutDirection, interfaceLanguage.isRTL ? .rightToLeft : .leftToRight)
-            } else {
-                ContentView()
-            }
+        if let locale = interfaceLanguage.locale {
+            ContentView()
+                .environment(\.locale, locale)
+        } else {
+            ContentView()
         }
     }
 }

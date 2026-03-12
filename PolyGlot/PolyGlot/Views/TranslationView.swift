@@ -63,8 +63,9 @@ struct TranslationView: View {
                             .font(.body)
                             .foregroundStyle(.tertiary)
                             .padding(.top, 14)
-                            .padding(.leading, 12)
+                            .padding(.horizontal, 12)
                             .allowsHitTesting(false)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
         }
@@ -107,7 +108,7 @@ struct TranslationView: View {
                     viewModel.translateWithLLM(settings: settings)
                 }
             } label: {
-                Label("Translate", systemImage: "arrow.right.circle.fill")
+                Label("Translate", systemImage: "arrow.forward.circle.fill")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: .command)

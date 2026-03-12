@@ -232,7 +232,7 @@ struct APIKeyMissingBanner: View {
                 Text("Configure API Key to enable cloud AI — Go to Settings")
                     .font(.subheadline.bold())
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(systemName: "chevron.forward")
                     .font(.caption)
             }
             .padding(12)

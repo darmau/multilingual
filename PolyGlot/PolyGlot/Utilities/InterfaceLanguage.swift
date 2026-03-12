@@ -18,9 +18,6 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable {
     case fr
     case ko
     case id
-    case it
-    case tr
-    case bn
 
     var id: String { rawValue }
 
@@ -42,9 +39,6 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable {
         case .fr:     return "Français"
         case .ko:     return "한국어"
         case .id:     return "Bahasa Indonesia"
-        case .it:     return "Italiano"
-        case .tr:     return "Türkçe"
-        case .bn:     return "বাংলা"
         }
     }
 
@@ -66,14 +60,7 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable {
         case .fr:     return Locale(identifier: "fr")
         case .ko:     return Locale(identifier: "ko")
         case .id:     return Locale(identifier: "id")
-        case .it:     return Locale(identifier: "it")
-        case .tr:     return Locale(identifier: "tr")
-        case .bn:     return Locale(identifier: "bn")
         }
     }
 
-    /// Whether this language uses a right-to-left writing direction.
-    var isRTL: Bool {
-        self == .ar
-    }
 }

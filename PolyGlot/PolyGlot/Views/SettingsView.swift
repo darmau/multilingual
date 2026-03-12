@@ -44,8 +44,8 @@ struct SettingsView: View {
     private var languageCard: some View {
         SettingsCard(
             icon: "globe",
-            title: String(localized: "Interface Language"),
-            subtitle: String(localized: "App display language"),
+            title: "Interface Language",
+            subtitle: "App display language",
             iconColor: Color(red: 0.20, green: 0.55, blue: 0.95)
         ) {
             HStack(spacing: 12) {
@@ -72,8 +72,8 @@ struct SettingsView: View {
     private var offlineCapabilitiesCard: some View {
         SettingsCard(
             icon: "arrow.down.circle.fill",
-            title: String(localized: "Offline & Local Capabilities"),
-            subtitle: String(localized: "Features available without API Key"),
+            title: "Offline & Local Capabilities",
+            subtitle: "Features available without API Key",
             iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
         ) {
             VStack(spacing: 12) {
@@ -162,8 +162,8 @@ struct SettingsView: View {
     private var apiKeysCard: some View {
         SettingsCard(
             icon: "key.fill",
-            title: String(localized: "API Keys (Optional)"),
-            subtitle: String(localized: "Configure to enable cloud AI analysis"),
+            title: "API Keys (Optional)",
+            subtitle: "Configure to enable cloud AI analysis",
             iconColor: Color(red: 0.95, green: 0.65, blue: 0.10)
         ) {
             VStack(spacing: 0) {
@@ -199,13 +199,13 @@ struct SettingsView: View {
     private var providerCard: some View {
         SettingsCard(
             icon: "cpu.fill",
-            title: String(localized: "Service Providers"),
-            subtitle: String(localized: "Choose AI and voice engines"),
+            title: "Service Providers",
+            subtitle: "Choose AI and voice engines",
             iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
         ) {
             VStack(spacing: 0) {
                 ProviderPickerRow(
-                    label: String(localized: "LLM Engine"),
+                    label: "LLM Engine",
                     icon: "brain.head.profile",
                     iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
                 ) {
@@ -217,7 +217,7 @@ struct SettingsView: View {
                 }
                 Divider().padding(.leading, 44)
                 ProviderPickerRow(
-                    label: String(localized: "Voice Synthesis"),
+                    label: "Voice Synthesis",
                     icon: "waveform",
                     iconColor: Color(red: 0.20, green: 0.60, blue: 0.90)
                 ) {
@@ -236,8 +236,8 @@ struct SettingsView: View {
     private var japaneseCard: some View {
         SettingsCard(
             icon: "character.ja",
-            title: String(localized: "Japanese Settings"),
-            subtitle: String(localized: "Control furigana display level"),
+            title: "Japanese Settings",
+            subtitle: "Control furigana display level",
             iconColor: Color.languageJapanese
         ) {
             VStack(spacing: 12) {
@@ -268,8 +268,8 @@ struct SettingsView: View {
     private var connectionTestCard: some View {
         SettingsCard(
             icon: "antenna.radiowaves.left.and.right",
-            title: String(localized: "Connection Test"),
-            subtitle: String(localized: "Verify current LLM service availability"),
+            title: "Connection Test",
+            subtitle: "Verify current LLM service availability",
             iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
         ) {
             VStack(spacing: 12) {
@@ -284,7 +284,7 @@ struct SettingsView: View {
                         } else {
                             Image(systemName: "bolt.fill")
                         }
-                        Text(viewModel.isTesting ? "Testing..." : "Test Connection")
+                        Text(viewModel.isTesting ? LocalizedStringKey("Testing...") : LocalizedStringKey("Test Connection"))
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
@@ -317,8 +317,8 @@ struct SettingsView: View {
 
 private struct SettingsCard<Content: View>: View {
     let icon: String
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     let iconColor: Color
     @ViewBuilder let content: () -> Content
 
@@ -417,7 +417,7 @@ private struct APIKeyRow: View {
 // MARK: - ProviderPickerRow
 
 private struct ProviderPickerRow<PickerContent: View>: View {
-    let label: String
+    let label: LocalizedStringKey
     let icon: String
     let iconColor: Color
     @ViewBuilder let picker: () -> PickerContent
@@ -449,6 +449,8 @@ private struct ProficiencyScale: View {
         levels.firstIndex(of: selected) ?? 0
     }
 
+    @Environment(\.layoutDirection) private var layoutDirection
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 4) {
@@ -459,12 +461,13 @@ private struct ProficiencyScale: View {
                         .frame(height: 4)
                 }
             }
+            // Swap label sides for RTL layout so the scale reads correctly.
             HStack {
-                Text("Show All Furigana")
+                Text(layoutDirection == .rightToLeft ? LocalizedStringKey("Native Level") : LocalizedStringKey("Show All Furigana"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
-                Text("Native Level")
+                Text(layoutDirection == .rightToLeft ? LocalizedStringKey("Show All Furigana") : LocalizedStringKey("Native Level"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

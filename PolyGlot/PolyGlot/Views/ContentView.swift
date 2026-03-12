@@ -38,9 +38,19 @@ enum AppTab: String, CaseIterable, Identifiable {
 struct ContentView: View {
     @State private var selectedTab: AppTab? = .dictionary
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Query private var settingsList: [Settings]
 
     /// Shared NetworkMonitor — observed for the offline banner.
     private let network = NetworkMonitor.shared
+
+    /// The locale to inject into each tab's content, derived from the user's
+    /// interface language setting. Injecting it here (rather than only at the
+    /// RootView level) ensures that NavigationSplitView's detail column — which
+    /// can lose parent environment on macOS — also receives the correct locale,
+    /// so NavigationStack titles render in the chosen language.
+    private var locale: Locale? {
+        settingsList.first?.interfaceLanguage.locale
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -100,12 +110,17 @@ struct ContentView: View {
 
     @ViewBuilder
     private func tabContent(_ tab: AppTab) -> some View {
-        switch tab {
-        case .dictionary:   DictionaryView()
-        case .sentence:     SentenceView()
-        case .translation:  TranslationView()
-        case .question:     QuestionView()
-        case .settings:     SettingsView()
+        let content: AnyView = switch tab {
+        case .dictionary:   AnyView(DictionaryView())
+        case .sentence:     AnyView(SentenceView())
+        case .translation:  AnyView(TranslationView())
+        case .question:     AnyView(QuestionView())
+        case .settings:     AnyView(SettingsView())
+        }
+        if let locale {
+            content.environment(\.locale, locale)
+        } else {
+            content
         }
     }
 }

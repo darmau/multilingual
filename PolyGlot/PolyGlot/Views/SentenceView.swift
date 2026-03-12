@@ -547,7 +547,7 @@ private struct ConjugationSection: View {
                     Text(c.word)
                         .font(.subheadline)
                         .japaneseLocale()
-                    Image(systemName: "arrow.right")
+                    Image(systemName: "arrow.forward")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                     Text(c.conjugated)
