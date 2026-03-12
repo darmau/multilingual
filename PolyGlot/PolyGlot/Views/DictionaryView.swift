@@ -757,22 +757,53 @@ private struct SystemDictionaryCard: View {
 
 #if os(macOS)
 /// Detects the script of the raw text and dispatches to the correct language parser.
+/// Dispatch rules based on observed DCSCopyTextDefinition output formats:
+///   - Hiragana/Katakana present → Japanese  ("よみ【漢字】（品詞）①…")
+///   - CJK + pinyin pattern (no kana) → Chinese  ("词 pīnyīn 词性 ①…")
+///   - Otherwise → English  ("word | IPA | pos 1 def…")
+///   - Korean: macOS system dictionary returns nil for Korean, never reaches here.
 private struct SystemDictionaryParsedView: View {
     let raw: String
 
-    /// True when the text contains Hiragana/Katakana — Japanese dictionary format.
     private var isJapanese: Bool {
         raw.unicodeScalars.contains { $0.value >= 0x3040 && $0.value <= 0x30FF }
     }
 
-    /// True when the text contains Hangul — Korean dictionary format.
+    /// Chinese: contains CJK but no Hiragana/Katakana, and has a pinyin-like
+    /// second token (ASCII letters with tone diacritics).
+    private var isChinese: Bool {
+        guard !isJapanese else { return false }
+        let hasCJK = raw.unicodeScalars.contains { $0.value >= 0x4E00 && $0.value <= 0x9FFF }
+        guard hasCJK else { return false }
+        // Chinese entries start with "词 pīnyīn" — second whitespace-delimited token
+        // contains Latin letters with or without tone marks (ā á ǎ à ē é etc.)
+        let tokens = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                        .components(separatedBy: .whitespaces)
+                        .filter { !$0.isEmpty }
+        guard tokens.count >= 2 else { return false }
+        let second = tokens[1]
+        return second.unicodeScalars.contains {
+            // Basic Latin a-z
+            ($0.value >= 0x61 && $0.value <= 0x7A) ||
+            // Latin Extended-A (tone-marked vowels like ā á ǎ à ē é ě è etc.)
+            ($0.value >= 0x0100 && $0.value <= 0x024F)
+        }
+    }
+
+    /// Korean: contains Hangul syllables (U+AC00–U+D7A3) or Hangul Jamo (U+1100–U+11FF)
     private var isKorean: Bool {
-        raw.unicodeScalars.contains { $0.value >= 0xAC00 && $0.value <= 0xD7A3 }
+        guard !isJapanese && !isChinese else { return false }
+        return raw.unicodeScalars.contains {
+            ($0.value >= 0xAC00 && $0.value <= 0xD7A3) ||
+            ($0.value >= 0x1100 && $0.value <= 0x11FF)
+        }
     }
 
     var body: some View {
         if isJapanese {
             SysDictJapaneseView(raw: raw)
+        } else if isChinese {
+            SysDictChineseView(raw: raw)
         } else if isKorean {
             SysDictKoreanView(raw: raw)
         } else {
@@ -1056,6 +1087,117 @@ private struct SysDictJapaneseView: View {
             }
             if !entries.isEmpty {
                 SysDictEntryList(entries: entries, textLocale: .japanese)
+            }
+        }
+    }
+}
+
+// MARK: - Chinese Parser
+// Raw format: "词 pīnyīn 词性 ①动 释义。例句 | 例句 ②动 释义"
+// Or single-sense: "词 pīnyīn 词性 释义。用法说明 ㊀见"..."
+
+private struct SysDictChineseView: View {
+    let raw: String
+
+    // Circle numbers ①–⑳ (U+2460–U+2473)
+    private static let circles: [Character] = Array("①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳")
+    // Enclosed numbers ㊀–㊉ (U+3280–U+3289), used for usage notes
+    private static let enclosed: [Character] = Array("㊀㊁㊂㊃㊄㊅㊆㊇㊈㊉")
+    // Part of speech single-char keywords that may appear as the third token
+    private static let posKeywords = ["形", "动", "名", "副", "代", "量", "连", "介", "助", "叹", "拟", "数"]
+
+    /// Pinyin: second whitespace-delimited token (e.g. "měilì")
+    var pinyin: String? {
+        let tokens = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        guard tokens.count >= 2 else { return nil }
+        return tokens[1]
+    }
+
+    /// POS: third token if it matches a known part-of-speech keyword
+    var partOfSpeech: String? {
+        let tokens = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        guard tokens.count >= 3 else { return nil }
+        let candidate = tokens[2]
+        return Self.posKeywords.contains(candidate) ? candidate : nil
+    }
+
+    var entries: [SysDictEntry] {
+        // Drop the "word pinyin [pos]" prefix tokens
+        let tokens = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        guard tokens.count >= 2 else { return [SysDictEntry(pos: nil, text: raw)] }
+        var skip = 2 // word + pinyin
+        if tokens.count >= 3 && Self.posKeywords.contains(tokens[2]) { skip = 3 }
+        var body = tokens.dropFirst(skip).joined(separator: " ")
+
+        // Strip usage-note sections that start with enclosed numbers ㊀㊁...
+        for ch in Self.enclosed {
+            if let r = body.firstIndex(of: ch) {
+                body = String(body[..<r]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+        // Strip trailing reference sections
+        for m in ["用法说明", "参见", "ORIGIN"] {
+            if let r = body.range(of: m) {
+                body = String(body[..<r.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+
+        // Split on ①②③ circle numbers into separate senses
+        var parts: [String] = []
+        var current = ""
+        for ch in body {
+            if Self.circles.contains(ch) {
+                let t = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !t.isEmpty { parts.append(t) }
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        let last = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !last.isEmpty { parts.append(last) }
+
+        // No circle numbers → treat the whole body as a single entry
+        if parts.isEmpty { parts = [body] }
+
+        return parts.compactMap { part -> SysDictEntry? in
+            var s = part
+            // Extract inline POS at the start of each sense, e.g. "动 释义"
+            var entryPos: String? = nil
+            for kw in Self.posKeywords {
+                if s.hasPrefix(kw + " ") || s == kw {
+                    entryPos = kw
+                    s = String(s.dropFirst(kw.count)).trimmingCharacters(in: .whitespaces)
+                    break
+                }
+            }
+            // Strip pipe-separated example sentences after the definition
+            if let pr = s.range(of: " | ") { s = String(s[..<pr.lowerBound]) }
+            if let pr = s.range(of: "| ") { s = String(s[..<pr.lowerBound]) }
+            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.isEmpty ? nil : SysDictEntry(pos: entryPos, text: s)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Pinyin and POS shown as header row
+            HStack(spacing: 8) {
+                if let py = pinyin {
+                    Text(py).font(.title3).italic().foregroundStyle(.secondary)
+                }
+                if let pos = partOfSpeech {
+                    Text(pos)
+                        .font(.caption.bold()).foregroundStyle(.orange)
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.08)).clipShape(Capsule())
+                }
+            }
+            if !entries.isEmpty {
+                SysDictEntryList(entries: entries, textLocale: .chinese)
             }
         }
     }
