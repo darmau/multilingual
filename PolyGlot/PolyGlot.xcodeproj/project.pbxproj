@@ -28,6 +28,15 @@
 		A10000190000000000000013 /* JapaneseProficiency.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000190000000000000013 /* JapaneseProficiency.swift */; };
 		A1000020000000000000001A /* LLMServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000020000000000000001A /* LLMServiceProtocol.swift */; };
 		A1000021000000000000001B /* TTSServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021000000000000001B /* TTSServiceProtocol.swift */; };
+		A1000022000000000000001C /* OpenAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000022000000000000001C /* OpenAIService.swift */; };
+		A1000023000000000000001D /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000023000000000000001D /* ClaudeService.swift */; };
+		A1000024000000000000001E /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000024000000000000001E /* GeminiService.swift */; };
+		A1000025000000000000001F /* LLMManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000025000000000000001F /* LLMManager.swift */; };
+		A10000260000000000000020 /* OpenAITTSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000260000000000000020 /* OpenAITTSService.swift */; };
+		A10000270000000000000021 /* AppleLocalTTSService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000270000000000000021 /* AppleLocalTTSService.swift */; };
+		A10000280000000000000022 /* TTSManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000280000000000000022 /* TTSManager.swift */; };
+		A10000290000000000000023 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000290000000000000023 /* LanguageDetector.swift */; };
+		A1000030000000000000002A /* SpeakButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030000000000000002A /* SpeakButton.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +61,15 @@
 		A20000190000000000000013 /* JapaneseProficiency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JapaneseProficiency.swift; sourceTree = "<group>"; };
 		A2000020000000000000001A /* LLMServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMServiceProtocol.swift; sourceTree = "<group>"; };
 		A2000021000000000000001B /* TTSServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSServiceProtocol.swift; sourceTree = "<group>"; };
+		A2000022000000000000001C /* OpenAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIService.swift; sourceTree = "<group>"; };
+		A2000023000000000000001D /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
+		A2000024000000000000001E /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		A2000025000000000000001F /* LLMManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMManager.swift; sourceTree = "<group>"; };
+		A20000260000000000000020 /* OpenAITTSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAITTSService.swift; sourceTree = "<group>"; };
+		A20000270000000000000021 /* AppleLocalTTSService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleLocalTTSService.swift; sourceTree = "<group>"; };
+		A20000280000000000000022 /* TTSManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TTSManager.swift; sourceTree = "<group>"; };
+		A20000290000000000000023 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
+		A2000030000000000000002A /* SpeakButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakButton.swift; sourceTree = "<group>"; };
 		A30000010000000000000001 /* PolyGlot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PolyGlot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -117,6 +135,7 @@
 				A2000012000000000000000C /* TranslationView.swift */,
 				A2000013000000000000000D /* QuestionView.swift */,
 				A2000014000000000000000E /* SettingsView.swift */,
+				A2000030000000000000002A /* SpeakButton.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -125,7 +144,14 @@
 			isa = PBXGroup;
 			children = (
 				A2000020000000000000001A /* LLMServiceProtocol.swift */,
+				A2000022000000000000001C /* OpenAIService.swift */,
+				A2000023000000000000001D /* ClaudeService.swift */,
+				A2000024000000000000001E /* GeminiService.swift */,
+				A2000025000000000000001F /* LLMManager.swift */,
 				A2000021000000000000001B /* TTSServiceProtocol.swift */,
+				A20000260000000000000020 /* OpenAITTSService.swift */,
+				A20000270000000000000021 /* AppleLocalTTSService.swift */,
+				A20000280000000000000022 /* TTSManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -138,6 +164,7 @@
 				A20000170000000000000011 /* LLMProvider.swift */,
 				A20000180000000000000012 /* TTSProvider.swift */,
 				A20000190000000000000013 /* JapaneseProficiency.swift */,
+				A20000290000000000000023 /* LanguageDetector.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -242,6 +269,15 @@
 				A10000190000000000000013 /* JapaneseProficiency.swift in Sources */,
 				A1000020000000000000001A /* LLMServiceProtocol.swift in Sources */,
 				A1000021000000000000001B /* TTSServiceProtocol.swift in Sources */,
+				A1000022000000000000001C /* OpenAIService.swift in Sources */,
+				A1000023000000000000001D /* ClaudeService.swift in Sources */,
+				A1000024000000000000001E /* GeminiService.swift in Sources */,
+				A1000025000000000000001F /* LLMManager.swift in Sources */,
+				A10000260000000000000020 /* OpenAITTSService.swift in Sources */,
+				A10000270000000000000021 /* AppleLocalTTSService.swift in Sources */,
+				A10000280000000000000022 /* TTSManager.swift in Sources */,
+				A10000290000000000000023 /* LanguageDetector.swift in Sources */,
+				A1000030000000000000002A /* SpeakButton.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
