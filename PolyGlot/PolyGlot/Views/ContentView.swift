@@ -36,7 +36,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 // MARK: - ContentView
 
 struct ContentView: View {
-    @State private var selectedTab: AppTab = .dictionary
+    @State private var selectedTab: AppTab? = .dictionary
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Shared NetworkMonitor — observed for the offline banner.
@@ -74,7 +74,7 @@ struct ContentView: View {
             ForEach(AppTab.allCases) { tab in
                 tabContent(tab)
                     .tabItem { Label(tab.title, systemImage: tab.icon) }
-                    .tag(tab)
+                    .tag(tab as AppTab?)
             }
         }
     }
@@ -83,14 +83,16 @@ struct ContentView: View {
 
     private var regularLayout: some View {
         NavigationSplitView {
-            List(AppTab.allCases, selection: $selectedTab) { tab in
-                Label(tab.title, systemImage: tab.icon)
-                    .tag(tab)
+            List(selection: $selectedTab) {
+                ForEach(AppTab.allCases) { tab in
+                    Label(tab.title, systemImage: tab.icon)
+                        .tag(tab)
+                }
             }
             .navigationTitle("PolyGlot")
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            tabContent(selectedTab)
+            tabContent(selectedTab ?? .dictionary)
         }
     }
 
