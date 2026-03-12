@@ -25,11 +25,8 @@ final class OpenAIService: LLMServiceProtocol {
 
         let body: [String: Any] = [
             "model": model,
-            "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user", "content": prompt]
-            ],
-            "temperature": 0.7
+            "instructions": systemPrompt,
+            "input": prompt
         ]
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -45,14 +42,16 @@ final class OpenAIService: LLMServiceProtocol {
             throw LLMError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
         }
 
+        // Responses API: output[0].content[0].text
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let choices = json["choices"] as? [[String: Any]],
-              let firstChoice = choices.first,
-              let message = firstChoice["message"] as? [String: Any],
-              let content = message["content"] as? String else {
+              let output = json["output"] as? [[String: Any]],
+              let firstOutput = output.first,
+              let content = firstOutput["content"] as? [[String: Any]],
+              let firstContent = content.first,
+              let text = firstContent["text"] as? String else {
             throw LLMError.parsingError
         }
 
-        return content
+        return text
     }
 }

@@ -13,8 +13,8 @@ final class TranslationViewModel {
     var targetLanguage: SupportedLanguage = .english
     var useLocalTranslation: Bool = false
 
-    /// Translation session configuration for Apple Translation API
-    var translationConfiguration: TranslationSession.Configuration?
+    /// Translation session configuration for Apple Translation API (stored as Any? for availability compatibility)
+    var translationConfiguration: Any?
 
     private let llmManager = LLMManager()
 
@@ -60,12 +60,14 @@ final class TranslationViewModel {
 
     // MARK: - Local Translation (Apple Translation API)
 
+    @available(macOS 15.0, iOS 18.0, *)
     func prepareLocalTranslation() {
         let source = Locale.Language(identifier: sourceLanguage.languageCode)
         let target = Locale.Language(identifier: targetLanguage.languageCode)
-        translationConfiguration = .init(source: source, target: target)
+        translationConfiguration = TranslationSession.Configuration(source: source, target: target)
     }
 
+    @available(macOS 15.0, iOS 18.0, *)
     func translateWithSession(_ session: TranslationSession) async {
         let text = sourceText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }

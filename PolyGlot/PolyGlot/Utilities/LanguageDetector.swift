@@ -17,7 +17,7 @@ enum LanguageDetector {
 
     private static func mapToSupported(_ language: NLLanguage) -> SupportedLanguage? {
         switch language {
-        case .simplifiedChinese, .traditionalChinese, .chinese:
+        case .simplifiedChinese, .traditionalChinese:
             return .chinese
         case .english:
             return .english

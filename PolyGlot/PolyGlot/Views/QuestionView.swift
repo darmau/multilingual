@@ -19,7 +19,7 @@ struct QuestionView: View {
                         .frame(minHeight: 100, maxHeight: 160)
                         .scrollContentBackground(.hidden)
                         .padding(8)
-                        .background(Color(.systemGray6))
+                        .background(Color.secondary.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .focused($isEditorFocused)
 

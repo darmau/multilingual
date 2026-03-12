@@ -31,9 +31,7 @@ struct TranslationView: View {
                 toggleBar
             }
             .navigationTitle("翻译")
-            .translationTask(viewModel.translationConfiguration) { session in
-                await viewModel.translateWithSession(session)
-            }
+            .modifier(LocalTranslationModifier(viewModel: viewModel))
         }
     }
 
@@ -61,7 +59,7 @@ struct TranslationView: View {
                 .frame(minHeight: 80, maxHeight: 140)
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(Color(.systemGray6))
+                .background(Color.secondary.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .focused($isEditorFocused)
         }
@@ -96,7 +94,9 @@ struct TranslationView: View {
             Button {
                 isEditorFocused = false
                 if viewModel.useLocalTranslation {
-                    viewModel.prepareLocalTranslation()
+                    if #available(macOS 15.0, iOS 18.0, *) {
+                        viewModel.prepareLocalTranslation()
+                    }
                 } else {
                     Task {
                         await viewModel.translateWithLLM(settings: settings)
@@ -159,7 +159,7 @@ struct TranslationView: View {
                 .padding(8)
             }
             .frame(minHeight: 80)
-            .background(Color(.systemGray6))
+            .background(Color.secondary.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .padding(.horizontal)
@@ -178,6 +178,23 @@ struct TranslationView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+    }
+}
+
+/// ViewModifier that conditionally applies `.translationTask` on macOS 15+ / iOS 18+
+private struct LocalTranslationModifier: ViewModifier {
+    var viewModel: TranslationViewModel
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, iOS 18.0, *) {
+            content.translationTask(
+                viewModel.translationConfiguration as? TranslationSession.Configuration
+            ) { session in
+                await viewModel.translateWithSession(session)
+            }
+        } else {
+            content
+        }
     }
 }
 
