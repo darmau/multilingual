@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0DC05E3D2F625912009DD4F5 /* WordAnalysisResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */; };
 		0DC05E3F2F62592D009DD4F5 /* PromptBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E3E2F62592D009DD4F5 /* PromptBuilder.swift */; };
+		0DC05E412F625B4B009DD4F5 /* SentenceAnalysisResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC05E402F625B4B009DD4F5 /* SentenceAnalysisResult.swift */; };
 		A10000010000000000000001 /* PolyGlotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* PolyGlotApp.swift */; };
 		A10000020000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020000000000000002 /* ContentView.swift */; };
 		A10000030000000000000003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000030000000000000003 /* Assets.xcassets */; };
@@ -44,6 +45,7 @@
 /* Begin PBXFileReference section */
 		0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordAnalysisResult.swift; sourceTree = "<group>"; };
 		0DC05E3E2F62592D009DD4F5 /* PromptBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptBuilder.swift; sourceTree = "<group>"; };
+		0DC05E402F625B4B009DD4F5 /* SentenceAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentenceAnalysisResult.swift; sourceTree = "<group>"; };
 		A20000010000000000000001 /* PolyGlotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolyGlotApp.swift; sourceTree = "<group>"; };
 		A20000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000030000000000000003 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -115,6 +117,7 @@
 			children = (
 				A20000040000000000000004 /* Settings.swift */,
 				0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */,
+				0DC05E402F625B4B009DD4F5 /* SentenceAnalysisResult.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -270,6 +273,7 @@
 				A1000013000000000000000D /* QuestionView.swift in Sources */,
 				A1000014000000000000000E /* SettingsView.swift in Sources */,
 				A1000015000000000000000F /* SupportedLanguage.swift in Sources */,
+				0DC05E412F625B4B009DD4F5 /* SentenceAnalysisResult.swift in Sources */,
 				A10000160000000000000010 /* AppMode.swift in Sources */,
 				A10000170000000000000011 /* LLMProvider.swift in Sources */,
 				A10000180000000000000012 /* TTSProvider.swift in Sources */,
