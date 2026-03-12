@@ -26,6 +26,7 @@ struct DictionaryView: View {
                 resultArea
             }
             .navigationTitle("Dictionary")
+            .environment(\.queryTTSProvider, viewModel.selectedTTSProvider)
             .onChange(of: viewModel.result?.inputWord) { _, newWord in
                 guard let newWord, !newWord.isEmpty,
                       let lang = viewModel.effectiveLanguage else { return }
@@ -108,7 +109,13 @@ struct DictionaryView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, 8)
+            .padding(.bottom, 4)
+
+            ModelSelectorBar(
+                settings: settings,
+                selectedLLM: $viewModel.selectedLLMProvider,
+                selectedTTS: $viewModel.selectedTTSProvider
+            )
         }
         .background(.bar)
     }

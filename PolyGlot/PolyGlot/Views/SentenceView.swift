@@ -23,6 +23,7 @@ struct SentenceView: View {
                 resultArea
             }
             .navigationTitle("Sentence Analysis")
+            .environment(\.queryTTSProvider, viewModel.selectedTTSProvider)
             .onChange(of: viewModel.result?.inputSentence) { _, newSentence in
                 guard let newSentence, !newSentence.isEmpty,
                       let lang = viewModel.effectiveLanguage else { return }
@@ -114,7 +115,13 @@ struct SentenceView: View {
                 .disabled(viewModel.inputText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal)
-            .padding(.bottom, 10)
+            .padding(.bottom, 4)
+
+            ModelSelectorBar(
+                settings: settings,
+                selectedLLM: $viewModel.selectedLLMProvider,
+                selectedTTS: $viewModel.selectedTTSProvider
+            )
         }
         .background(.bar)
     }

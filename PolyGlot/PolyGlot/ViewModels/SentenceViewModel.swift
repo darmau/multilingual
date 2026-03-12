@@ -11,6 +11,11 @@ final class SentenceViewModel {
     var rawResponse: String? = nil
     var errorMessage: String? = nil
 
+    /// Per-query LLM override. nil means use the global setting in Settings.
+    var selectedLLMProvider: LLMProvider? = nil
+    /// Per-query TTS override. nil means use the global setting in Settings.
+    var selectedTTSProvider: TTSProvider? = nil
+
     private let llmManager = LLMManager()
     private var currentTask: Task<Void, Never>?
 
@@ -65,7 +70,7 @@ final class SentenceViewModel {
 
         do {
             let responseText = try await llmManager.sendPrompt(
-                prompt, systemPrompt: systemPrompt, settings: settings)
+                prompt, systemPrompt: systemPrompt, settings: settings, overrideProvider: selectedLLMProvider)
             guard !Task.isCancelled else { return }
             rawResponse = responseText
             result = parseResult(from: responseText)

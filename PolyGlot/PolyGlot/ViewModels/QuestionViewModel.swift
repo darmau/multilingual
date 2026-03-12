@@ -11,6 +11,11 @@ final class QuestionViewModel {
     /// The detected language of the AI response, used for TTS.
     var answerLanguage: SupportedLanguage?
 
+    /// Per-query LLM override. nil means use the global setting in Settings.
+    var selectedLLMProvider: LLMProvider? = nil
+    /// Per-query TTS override. nil means use the global setting in Settings.
+    var selectedTTSProvider: TTSProvider? = nil
+
     private let llmManager = LLMManager()
     private var currentTask: Task<Void, Never>?
 
@@ -43,7 +48,7 @@ final class QuestionViewModel {
         defer { isLoading = false }
 
         do {
-            for try await chunk in llmManager.streamPrompt(prompt, systemPrompt: systemPrompt, settings: settings) {
+            for try await chunk in llmManager.streamPrompt(prompt, systemPrompt: systemPrompt, settings: settings, overrideProvider: selectedLLMProvider) {
                 guard !Task.isCancelled else { return }
                 answerText += chunk
                 // Detect language once we have enough text

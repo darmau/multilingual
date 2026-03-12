@@ -7,6 +7,7 @@ struct TranslationView: View {
     @Query private var settingsList: [Settings]
     @FocusState private var isEditorFocused: Bool
     @Environment(\.navigateToSettings) private var navigateToSettings
+    @State private var detectTask: Task<Void, Never>?
 
     private var settings: Settings {
         settingsList.first ?? Settings()
@@ -17,6 +18,11 @@ struct TranslationView: View {
             VStack(spacing: 0) {
                 sourceSection
                 controlBar
+                ModelSelectorBar(
+                    settings: settings,
+                    selectedLLM: $viewModel.selectedLLMProvider,
+                    selectedTTS: $viewModel.selectedTTSProvider
+                )
                 Divider()
                 resultSection
                 Spacer(minLength: 0)
@@ -24,15 +30,33 @@ struct TranslationView: View {
             }
             .navigationTitle("Translation")
             .modifier(LocalTranslationModifier(viewModel: viewModel))
+            .environment(\.queryTTSProvider, viewModel.selectedTTSProvider)
+            .onChange(of: viewModel.sourceText) { _, _ in
+                detectTask?.cancel()
+                detectTask = Task {
+                    try? await Task.sleep(for: .milliseconds(400))
+                    if !Task.isCancelled {
+                        viewModel.detectSourceLanguage()
+                    }
+                }
+            }
         }
     }
 
     // MARK: - Source Section
 
+    /// Custom binding for the source language Picker that registers manual overrides.
+    private var sourceLanguageBinding: Binding<SupportedLanguage> {
+        Binding(
+            get: { viewModel.sourceLanguage },
+            set: { lang in viewModel.overrideSourceLanguage(lang) }
+        )
+    }
+
     private var sourceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Picker("Source Language", selection: $viewModel.sourceLanguage) {
+                Picker("Source Language", selection: sourceLanguageBinding) {
                     ForEach(SupportedLanguage.allCases) { lang in
                         Text(lang.displayName).tag(lang)
                     }
@@ -44,6 +68,26 @@ struct TranslationView: View {
 
                 // Language badge for source
                 LanguageBadge(language: viewModel.sourceLanguage, style: .outline)
+
+                // Auto-detect indicator / reset button
+                if viewModel.isSourceLanguageAutoDetected {
+                    Text("Auto")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .transition(.opacity)
+                } else if viewModel.isSourceLanguageManuallyOverridden {
+                    Button {
+                        viewModel.resetSourceLanguageToAuto()
+                    } label: {
+                        Image(systemName: "wand.and.sparkles")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
+                    .foregroundStyle(.secondary)
+                    .help("Reset to auto-detect language")
+                    .transition(.opacity)
+                }
 
                 Spacer()
 

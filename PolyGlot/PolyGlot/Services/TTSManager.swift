@@ -13,7 +13,9 @@ final class TTSManager {
     /// Current in-flight TTS task — kept so it can be cancelled.
     private var currentTask: Task<Void, Never>?
 
-    func speak(text: String, language: SupportedLanguage, settings: Settings) {
+    /// Speaks the given text. Pass `overrideProvider` to use a specific TTS engine
+    /// instead of `settings.selectedTTSProvider`.
+    func speak(text: String, language: SupportedLanguage, settings: Settings, overrideProvider: TTSProvider? = nil) {
         // 中文不需要朗读
         guard language != .chinese else { return }
 
@@ -21,19 +23,21 @@ final class TTSManager {
         currentTask?.cancel()
 
         currentTask = Task {
-            await _speak(text: text, language: language, settings: settings)
+            await _speak(text: text, language: language, settings: settings, overrideProvider: overrideProvider)
         }
     }
 
-    private func _speak(text: String, language: SupportedLanguage, settings: Settings) async {
+    private func _speak(text: String, language: SupportedLanguage, settings: Settings, overrideProvider: TTSProvider?) async {
         isSpeaking = true
         defer { isSpeaking = false }
 
         let service: any TTSServiceProtocol
 
+        let effectiveProvider = overrideProvider ?? settings.selectedTTSProvider
+
         // Use OpenAI TTS only if explicitly selected AND the API key is configured;
         // otherwise always fall back to Apple Local TTS so the app works without keys.
-        if settings.selectedTTSProvider == .openaiTTS && !settings.openaiAPIKey.isEmpty {
+        if effectiveProvider == .openaiTTS && !settings.openaiAPIKey.isEmpty {
             // Reuse same instance so AVAudioPlayer reference lives on
             if openAIService == nil || openAIService?.apiKey != settings.openaiAPIKey {
                 openAIService = OpenAITTSService(apiKey: settings.openaiAPIKey)
@@ -49,7 +53,7 @@ final class TTSManager {
             // Silently ignore
         } catch {
             // If OpenAI TTS fails, fall back to Apple Local TTS
-            if settings.selectedTTSProvider == .openaiTTS {
+            if effectiveProvider == .openaiTTS {
                 do {
                     try await appleService.speak(text: text, language: language)
                 } catch {

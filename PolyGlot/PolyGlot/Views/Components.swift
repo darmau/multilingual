@@ -1,4 +1,22 @@
 import SwiftUI
+import SwiftData
+
+// MARK: - Environment Keys
+
+/// Environment key for per-query TTS provider override, set by each feature view.
+private struct QueryTTSProviderKey: EnvironmentKey {
+    static let defaultValue: TTSProvider? = nil
+}
+
+extension EnvironmentValues {
+    /// Per-query TTS provider override injected by feature views.
+    /// SpeakButton reads this automatically so sub-components don't need
+    /// explicit ttsProvider parameters.
+    var queryTTSProvider: TTSProvider? {
+        get { self[QueryTTSProviderKey.self] }
+        set { self[QueryTTSProviderKey.self] = newValue }
+    }
+}
 
 // MARK: - LanguageBadge
 
@@ -248,6 +266,107 @@ struct APIKeyMissingBanner: View {
         .accessibilityLabel("Configure API Key to enable cloud AI")
         .accessibilityHint("Go to Settings to enter API Key")
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+// MARK: - ModelSelectorBar
+
+/// A compact bar for selecting LLM model and TTS voice on a per-query basis.
+/// Place above the action button in Dictionary, Sentence, Translation and Question views.
+struct ModelSelectorBar: View {
+    let settings: Settings
+    @Binding var selectedLLM: LLMProvider?
+    @Binding var selectedTTS: TTSProvider?
+
+    private var effectiveLLM: LLMProvider { selectedLLM ?? settings.selectedLLMProvider }
+    private var effectiveTTS: TTSProvider { selectedTTS ?? settings.selectedTTSProvider }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            // LLM model picker
+            Menu {
+                ForEach(LLMProvider.allCases) { provider in
+                    Button {
+                        selectedLLM = provider
+                    } label: {
+                        if selectedLLM == provider {
+                            Label(provider.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(provider.displayName)
+                        }
+                    }
+                }
+                if selectedLLM != nil {
+                    Divider()
+                    Button {
+                        selectedLLM = nil
+                    } label: {
+                        Label(String(localized: "Default (\(settings.selectedLLMProvider.displayName))"), systemImage: "arrow.counterclockwise")
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "cpu")
+                    Text(effectiveLLM.displayName)
+                    if selectedLLM != nil {
+                        Image(systemName: "pencil")
+                            .font(.caption2)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(selectedLLM != nil ? .primary : .secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(selectedLLM != nil ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.1))
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Select AI model: \(effectiveLLM.displayName)")
+
+            // TTS voice picker
+            Menu {
+                ForEach(TTSProvider.allCases) { provider in
+                    Button {
+                        selectedTTS = provider
+                    } label: {
+                        if selectedTTS == provider {
+                            Label(provider.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(provider.displayName)
+                        }
+                    }
+                }
+                if selectedTTS != nil {
+                    Divider()
+                    Button {
+                        selectedTTS = nil
+                    } label: {
+                        Label(String(localized: "Default (\(settings.selectedTTSProvider.displayName))"), systemImage: "arrow.counterclockwise")
+                    }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "speaker.wave.2")
+                    Text(effectiveTTS.displayName)
+                    if selectedTTS != nil {
+                        Image(systemName: "pencil")
+                            .font(.caption2)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(selectedTTS != nil ? .primary : .secondary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(selectedTTS != nil ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.1))
+                .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Select voice: \(effectiveTTS.displayName)")
+
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 4)
     }
 }
 

@@ -48,8 +48,14 @@ final class LLMManager {
     private(set) var isLoading = false
 
     /// Attempts to send a prompt, preferring Apple Intelligence when available,
-    /// then falling back to the cloud LLM with the configured API key.
-    func sendPrompt(_ prompt: String, systemPrompt: String, settings: Settings) async throws -> String {
+    /// then falling back to the cloud LLM. Pass `overrideProvider` to use a specific
+    /// cloud provider instead of `settings.selectedLLMProvider`.
+    func sendPrompt(
+        _ prompt: String,
+        systemPrompt: String,
+        settings: Settings,
+        overrideProvider: LLMProvider? = nil
+    ) async throws -> String {
         // Try Apple Intelligence first if available (on-device, no network needed)
         #if canImport(FoundationModels)
         if #available(iOS 26.0, macOS 26.0, *) {
@@ -71,12 +77,12 @@ final class LLMManager {
             throw LLMError.offline
         }
 
-        // Cloud provider requires API key
-        guard settings.hasActiveAPIKey else {
+        let provider = overrideProvider ?? settings.selectedLLMProvider
+        guard !apiKey(for: provider, settings: settings).isEmpty else {
             throw LLMError.missingAPIKey
         }
 
-        let service = createCloudService(for: settings)
+        let service = createCloudService(for: provider, settings: settings)
         isLoading = true
         defer { isLoading = false }
 
@@ -100,8 +106,14 @@ final class LLMManager {
     }
 
     /// Streams the response token-by-token. Falls back to non-streaming if Apple Intelligence
-    /// is available (wraps single response as a single-chunk stream).
-    func streamPrompt(_ prompt: String, systemPrompt: String, settings: Settings) -> AsyncThrowingStream<String, Error> {
+    /// is available (wraps single response as a single-chunk stream). Pass `overrideProvider`
+    /// to use a specific cloud provider instead of `settings.selectedLLMProvider`.
+    func streamPrompt(
+        _ prompt: String,
+        systemPrompt: String,
+        settings: Settings,
+        overrideProvider: LLMProvider? = nil
+    ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
                 // Try Apple Intelligence first (supports native streaming)
@@ -131,12 +143,13 @@ final class LLMManager {
                     return
                 }
 
-                guard settings.hasActiveAPIKey else {
+                let provider = overrideProvider ?? settings.selectedLLMProvider
+                guard !self.apiKey(for: provider, settings: settings).isEmpty else {
                     continuation.finish(throwing: LLMError.missingAPIKey)
                     return
                 }
 
-                let service = self.createCloudService(for: settings)
+                let service = self.createCloudService(for: provider, settings: settings)
                 self.isLoading = true
                 do {
                     for try await chunk in service.streamPrompt(prompt, systemPrompt: systemPrompt) {
@@ -162,8 +175,16 @@ final class LLMManager {
         try await sendPrompt("Hello", systemPrompt: "Reply in one short sentence.", settings: settings)
     }
 
-    private func createCloudService(for settings: Settings) -> LLMServiceProtocol {
-        switch settings.selectedLLMProvider {
+    private func apiKey(for provider: LLMProvider, settings: Settings) -> String {
+        switch provider {
+        case .openai: return settings.openaiAPIKey
+        case .claude: return settings.claudeAPIKey
+        case .gemini: return settings.geminiAPIKey
+        }
+    }
+
+    private func createCloudService(for provider: LLMProvider, settings: Settings) -> LLMServiceProtocol {
+        switch provider {
         case .openai:
             return OpenAIService(apiKey: settings.openaiAPIKey)
         case .claude:

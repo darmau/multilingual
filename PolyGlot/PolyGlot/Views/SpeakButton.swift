@@ -4,12 +4,20 @@ import SwiftData
 struct SpeakButton: View {
     let text: String
     let language: SupportedLanguage
+    /// Optional per-button TTS provider override. Overrides the view-level environment value.
+    var ttsProvider: TTSProvider? = nil
 
     @State private var ttsManager = TTSManager()
     @Query private var settingsList: [Settings]
+    @Environment(\.queryTTSProvider) private var environmentTTSProvider
 
     private var settings: Settings {
         settingsList.first ?? Settings()
+    }
+
+    /// Effective TTS provider: explicit param > environment > global settings (handled by TTSManager).
+    private var effectiveTTSProvider: TTSProvider? {
+        ttsProvider ?? environmentTTSProvider
     }
 
     var body: some View {
@@ -18,7 +26,7 @@ struct SpeakButton: View {
                 if ttsManager.isSpeaking {
                     ttsManager.stop()
                 } else {
-                    ttsManager.speak(text: text, language: language, settings: settings)
+                    ttsManager.speak(text: text, language: language, settings: settings, overrideProvider: effectiveTTSProvider)
                 }
             } label: {
                 Group {

@@ -16,6 +16,11 @@ final class DictionaryViewModel {
     /// Whether to present the system dictionary viewer (iOS).
     var showSystemDictionary: Bool = false
 
+    /// Per-query LLM override. nil means use the global setting in Settings.
+    var selectedLLMProvider: LLMProvider? = nil
+    /// Per-query TTS override. nil means use the global setting in Settings.
+    var selectedTTSProvider: TTSProvider? = nil
+
     private let llmManager = LLMManager()
     /// Tracks the current in-flight request so it can be cancelled.
     private var currentTask: Task<Void, Never>?
@@ -90,7 +95,7 @@ final class DictionaryViewModel {
 
             do {
                 let responseText = try await llmManager.sendPrompt(
-                    prompt, systemPrompt: systemPrompt, settings: settings)
+                    prompt, systemPrompt: systemPrompt, settings: settings, overrideProvider: selectedLLMProvider)
                 guard !Task.isCancelled else { return }
                 rawResponse = responseText
                 result = parseResult(from: responseText)

@@ -13,6 +13,25 @@ final class TranslationViewModel {
     var targetLanguage: SupportedLanguage = .english
     var useLocalTranslation: Bool = false
 
+    // MARK: - Language Auto-Detection
+
+    /// Language detected from the current sourceText; nil if detection failed or text is too short.
+    var detectedSourceLanguage: SupportedLanguage? = nil
+    /// True when sourceLanguage was set by the user via the Picker rather than auto-detection.
+    private(set) var isSourceLanguageManuallyOverridden: Bool = false
+
+    /// True when the current sourceLanguage was set by auto-detection (not manually overridden).
+    var isSourceLanguageAutoDetected: Bool {
+        detectedSourceLanguage != nil && !isSourceLanguageManuallyOverridden
+    }
+
+    // MARK: - Per-Query Model Selection
+
+    /// Per-query LLM override. nil means use the global setting in Settings.
+    var selectedLLMProvider: LLMProvider? = nil
+    /// Per-query TTS override. nil means use the global setting in Settings.
+    var selectedTTSProvider: TTSProvider? = nil
+
     /// Translation session configuration for Apple Translation API (stored as Any? for availability compatibility)
     var translationConfiguration: Any?
 
@@ -37,6 +56,33 @@ final class TranslationViewModel {
     func shouldPreferLocalTranslation(settings: Settings) -> Bool {
         if useLocalTranslation { return true }
         return !LLMManager.hasAvailableLLM(settings: settings)
+    }
+
+    // MARK: - Auto Language Detection
+
+    /// Detects the source language from the current sourceText.
+    /// Only updates if the user has not manually overridden the language.
+    func detectSourceLanguage() {
+        let text = sourceText.trimmingCharacters(in: .whitespaces)
+        guard text.count >= 3, !isSourceLanguageManuallyOverridden else { return }
+        if let detected = LanguageDetector.detect(text) {
+            detectedSourceLanguage = detected
+            sourceLanguage = detected
+        }
+    }
+
+    /// Manually override the source language (e.g. from a Picker selection).
+    func overrideSourceLanguage(_ language: SupportedLanguage) {
+        sourceLanguage = language
+        detectedSourceLanguage = nil
+        isSourceLanguageManuallyOverridden = true
+    }
+
+    /// Reset source language to auto-detection mode.
+    func resetSourceLanguageToAuto() {
+        isSourceLanguageManuallyOverridden = false
+        detectedSourceLanguage = nil
+        detectSourceLanguage()
     }
 
     func swapLanguages() {
@@ -71,7 +117,7 @@ final class TranslationViewModel {
         let systemPrompt = "You are a professional translator. Translate the following text from \(sourceLanguage.displayName) to \(targetLanguage.displayName). Output ONLY the translated text, no explanations."
 
         do {
-            for try await chunk in llmManager.streamPrompt(text, systemPrompt: systemPrompt, settings: settings) {
+            for try await chunk in llmManager.streamPrompt(text, systemPrompt: systemPrompt, settings: settings, overrideProvider: selectedLLMProvider) {
                 guard !Task.isCancelled else { return }
                 translatedText += chunk
             }
@@ -117,5 +163,7 @@ final class TranslationViewModel {
         translatedText = ""
         errorMessage = nil
         isLoading = false
+        detectedSourceLanguage = nil
+        isSourceLanguageManuallyOverridden = false
     }
 }

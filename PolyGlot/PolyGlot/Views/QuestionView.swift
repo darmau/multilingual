@@ -18,6 +18,7 @@ struct QuestionView: View {
                 responseArea
             }
             .navigationTitle("Question")
+            .environment(\.queryTTSProvider, viewModel.selectedTTSProvider)
         }
     }
 
@@ -25,47 +26,57 @@ struct QuestionView: View {
 
     private var inputArea: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextEditor(text: $viewModel.questionText)
-                .frame(minHeight: 80, maxHeight: 140)
-                .scrollContentBackground(.hidden)
-                .padding(8)
-                .background(Color.secondary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .focused($isEditorFocused)
-                .overlay(alignment: .topLeading) {
-                    if viewModel.questionText.isEmpty {
-                        Text("Ask a question in any language...")
-                            .font(.body)
-                            .foregroundStyle(.tertiary)
-                            .padding(.top, 14)
-                            .padding(.leading, 12)
-                            .allowsHitTesting(false)
+            VStack(alignment: .leading, spacing: 8) {
+                TextEditor(text: $viewModel.questionText)
+                    .frame(minHeight: 80, maxHeight: 140)
+                    .scrollContentBackground(.hidden)
+                    .padding(8)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .focused($isEditorFocused)
+                    .overlay(alignment: .topLeading) {
+                        if viewModel.questionText.isEmpty {
+                            Text("Ask a question in any language...")
+                                .font(.body)
+                                .foregroundStyle(.tertiary)
+                                .padding(.top, 14)
+                                .padding(.leading, 12)
+                                .allowsHitTesting(false)
+                        }
                     }
-                }
-                .onSubmit { sendQuestion() }
+                    .onSubmit { sendQuestion() }
 
-            HStack {
-                Spacer()
-                if !viewModel.questionText.isEmpty {
-                    Button("Clear", role: .destructive) {
-                        viewModel.clear()
+                HStack {
+                    Spacer()
+                    if !viewModel.questionText.isEmpty {
+                        Button("Clear", role: .destructive) {
+                            viewModel.clear()
+                        }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
                     }
-                    .buttonStyle(.borderless)
-                    .controlSize(.small)
+                    Button {
+                        sendQuestion()
+                    } label: {
+                        Label("Send", systemImage: "paperplane.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .accessibilityLabel("Send Question")
+                    .accessibilityHint("Send to AI for an answer")
+                    .disabled(!viewModel.canSend)
                 }
-                Button {
-                    sendQuestion()
-                } label: {
-                    Label("Send", systemImage: "paperplane.fill")
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("Send Question")
-                .accessibilityHint("Send to AI for an answer")
-                .disabled(!viewModel.canSend)
             }
+            .padding(.horizontal)
+            .padding(.top)
+
+            ModelSelectorBar(
+                settings: settings,
+                selectedLLM: $viewModel.selectedLLMProvider,
+                selectedTTS: $viewModel.selectedTTSProvider
+            )
         }
-        .padding()
+        .padding(.bottom, 4)
         .background(.bar)
     }
 
