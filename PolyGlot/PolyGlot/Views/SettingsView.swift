@@ -2,17 +2,11 @@ import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query private var settingsList: [Settings]
     @State private var viewModel = SettingsViewModel()
 
     private var settings: Settings {
-        if let existing = settingsList.first {
-            return existing
-        }
-        let newSettings = Settings()
-        modelContext.insert(newSettings)
-        return newSettings
+        settingsList.first ?? Settings()
     }
 
     var body: some View {
