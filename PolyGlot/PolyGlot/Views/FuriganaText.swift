@@ -74,6 +74,9 @@ private struct FuriganaLayout: View {
 
     var body: some View {
         // Use a wrapping flow layout to handle line breaks naturally.
+        // The Japanese locale is set here to ensure all CJK characters inside
+        // this layout are rendered with JP glyph variants rather than the CN
+        // variants that the system might pick based on device/app locale.
         FuriganaFlowLayout(spacing: 0) {
             ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
                 switch segment {
@@ -90,6 +93,7 @@ private struct FuriganaLayout: View {
                 }
             }
         }
+        .environment(\.locale, Locale(identifier: "ja-JP"))
     }
 }
 

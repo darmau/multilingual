@@ -1,5 +1,24 @@
 import SwiftUI
 
+// MARK: - Language Locale Modifier
+
+/// Applies the correct CJK glyph variant locale for a given language.
+/// Only has an effect for .chinese and .japanese; other languages are left alone.
+struct LanguageLocaleModifier: ViewModifier {
+    let language: SupportedLanguage
+
+    func body(content: Content) -> some View {
+        switch language {
+        case .chinese:
+            content.environment(\.locale, Locale(identifier: "zh-Hans"))
+        case .japanese:
+            content.environment(\.locale, Locale(identifier: "ja-JP"))
+        default:
+            content
+        }
+    }
+}
+
 // MARK: - Language Identity Colors
 
 extension Color {
@@ -48,5 +67,17 @@ struct CardStyle: ViewModifier {
 extension View {
     func cardStyle(accentColor: Color = .clear, cornerRadius: CGFloat = 12) -> some View {
         modifier(CardStyle(accentColor: accentColor, cornerRadius: cornerRadius))
+    }
+
+    /// Forces all descendant Text views to use Simplified Chinese glyph variants.
+    /// Apply to any container that displays Chinese text to prevent the system
+    /// from accidentally using Japanese CJK glyph shapes.
+    func chineseLocale() -> some View {
+        environment(\.locale, Locale(identifier: "zh-Hans"))
+    }
+
+    /// Forces all descendant Text views to use Japanese glyph variants.
+    func japaneseLocale() -> some View {
+        environment(\.locale, Locale(identifier: "ja-JP"))
     }
 }

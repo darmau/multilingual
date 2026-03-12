@@ -314,6 +314,7 @@ private struct ChineseCard: View {
                 }
             }
         }
+        .chineseLocale()
     }
 }
 
@@ -350,12 +351,12 @@ private struct JapaneseCard: View {
 
             // Etymology
             if let etymology = analysis.etymology, !etymology.isEmpty {
-                InfoRow(label: "词源", value: etymology)
+                InfoRow(label: "词源", value: etymology, valueLanguage: .japanese)
             }
 
             // Conjugation
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
-                InfoRow(label: "变形", value: conjugation)
+                InfoRow(label: "变形", value: conjugation, valueLanguage: .japanese)
             }
 
             // Synonyms / Antonyms
@@ -441,15 +442,19 @@ private struct LanguageSection<Content: View>: View {
 private struct InfoRow: View {
     let label: String
     let value: String
+    /// Language of the value text — used to apply correct CJK glyph variant.
+    var valueLanguage: SupportedLanguage = .english
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
+                .chineseLocale()                // UI labels are always Chinese
             Text(value)
                 .font(.body)
                 .textSelection(.enabled)
+                .modifier(LanguageLocaleModifier(language: valueLanguage))
         }
     }
 }
@@ -471,16 +476,20 @@ private struct DefinitionRow: View {
                         .padding(.vertical, 2)
                         .background(.quaternary)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .modifier(LanguageLocaleModifier(language: exampleLanguage))
                 }
+                // Meanings are always written in Chinese (per CLAUDE.md rules)
                 Text(meaning)
                     .font(.body)
                     .textSelection(.enabled)
+                    .chineseLocale()
             }
 
             if let example, !example.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     VStack(alignment: .leading, spacing: 2) {
                         if exampleLanguage == .japanese {
+                            // FuriganaText internally sets japaneseLocale
                             FuriganaText(example, font: .subheadline)
                                 .foregroundStyle(.secondary)
                         } else {
@@ -489,6 +498,7 @@ private struct DefinitionRow: View {
                                 .foregroundStyle(.secondary)
                                 .italic()
                                 .textSelection(.enabled)
+                                .modifier(LanguageLocaleModifier(language: exampleLanguage))
                         }
                     }
                     SpeakButton(

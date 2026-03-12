@@ -288,6 +288,7 @@ private struct ChineseSentenceCard: View {
                 .font(.body)
                 .textSelection(.enabled)
         }
+        .chineseLocale()
     }
 }
 
@@ -432,6 +433,8 @@ private struct GrammarInfoRow: View {
                 .font(.subheadline)
                 .textSelection(.enabled)
         }
+        // Grammar explanations are always written in Chinese (per app rules)
+        .chineseLocale()
     }
 }
 
@@ -477,6 +480,7 @@ private struct KeyPhrasesSection: View {
                     Text(phrase.explanation)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .chineseLocale()
                     if let gp = phrase.grammarPoint, !gp.isEmpty {
                         Text(gp)
                             .font(.caption)
@@ -485,6 +489,7 @@ private struct KeyPhrasesSection: View {
                             .background(.blue.opacity(0.1))
                             .foregroundStyle(.blue)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .chineseLocale()
                     }
                 }
                 .padding(8)
@@ -508,10 +513,12 @@ private struct ParticlesSection: View {
                     Text(item.particle)
                         .font(.subheadline.bold())
                         .frame(minWidth: 32, alignment: .leading)
+                        .japaneseLocale()           // particle is Japanese
                     Text(item.function)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
+                        .chineseLocale()            // function explanation is Chinese
                 }
             }
         }
@@ -530,11 +537,13 @@ private struct ConjugationSection: View {
                 HStack(spacing: 8) {
                     Text(c.word)
                         .font(.subheadline)
+                        .japaneseLocale()
                     Image(systemName: "arrow.right")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                     Text(c.conjugated)
                         .font(.subheadline.bold())
+                        .japaneseLocale()
                     if let type = c.type, !type.isEmpty {
                         Text(type)
                             .font(.caption)
@@ -542,6 +551,7 @@ private struct ConjugationSection: View {
                             .padding(.vertical, 2)
                             .background(.quaternary)
                             .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .chineseLocale()        // conjugation type label is Chinese
                     }
                 }
             }
@@ -562,13 +572,16 @@ private struct JapanesePatternSection: View {
                     Text(p.pattern)
                         .font(.subheadline.bold())
                         .foregroundStyle(Color.language(.japanese))
+                        .japaneseLocale()
                     Text(p.meaning)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .chineseLocale()
                     if let usage = p.usage, !usage.isEmpty {
                         Text(usage)
                             .font(.caption)
                             .foregroundStyle(.tertiary)
+                            .chineseLocale()
                     }
                 }
                 .padding(8)
@@ -595,6 +608,7 @@ private struct KoreanPatternSection: View {
                     Text(p.meaning)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .chineseLocale()
                 }
                 .padding(8)
                 .background(Color.language(.korean).opacity(0.07))
