@@ -70,7 +70,7 @@ final class SentenceViewModel {
             rawResponse = responseText
             result = parseResult(from: responseText)
             if result == nil {
-                errorMessage = "无法解析响应，请重试。"
+                errorMessage = String(localized: "Unable to parse response, please retry.")
             }
         } catch is CancellationError {
             // Silently ignore cancellation

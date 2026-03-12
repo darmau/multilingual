@@ -22,7 +22,7 @@ struct TranslationView: View {
                 Spacer(minLength: 0)
                 toggleBar
             }
-            .navigationTitle("翻译")
+            .navigationTitle("Translation")
             .modifier(LocalTranslationModifier(viewModel: viewModel))
         }
     }
@@ -32,7 +32,7 @@ struct TranslationView: View {
     private var sourceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Picker("源语言", selection: $viewModel.sourceLanguage) {
+                Picker("Source Language", selection: $viewModel.sourceLanguage) {
                     ForEach(SupportedLanguage.allCases) { lang in
                         Text(lang.displayName).tag(lang)
                     }
@@ -59,7 +59,7 @@ struct TranslationView: View {
                 .focused($isEditorFocused)
                 .overlay(alignment: .topLeading) {
                     if viewModel.sourceText.isEmpty {
-                        Text("输入要翻译的文本...")
+                        Text("Enter text to translate...")
                             .font(.body)
                             .foregroundStyle(.tertiary)
                             .padding(.top, 14)
@@ -77,7 +77,7 @@ struct TranslationView: View {
     private var controlBar: some View {
         HStack(spacing: 16) {
             if !viewModel.sourceText.isEmpty {
-                Button("清除", role: .destructive) {
+                Button("Clear", role: .destructive) {
                     viewModel.clear()
                 }
                 .buttonStyle(.borderless)
@@ -93,7 +93,7 @@ struct TranslationView: View {
                     .font(.title3)
             }
             .disabled(viewModel.isLoading)
-            .accessibilityLabel("交换语言")
+            .accessibilityLabel("Swap Languages")
 
             Spacer()
 
@@ -107,12 +107,12 @@ struct TranslationView: View {
                     viewModel.translateWithLLM(settings: settings)
                 }
             } label: {
-                Label("翻译", systemImage: "arrow.right.circle.fill")
+                Label("Translate", systemImage: "arrow.right.circle.fill")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: .command)
-            .accessibilityLabel("翻译")
-            .accessibilityHint("将源语言文本翻译为目标语言")
+            .accessibilityLabel("Translate")
+            .accessibilityHint("Translate source text to target language")
             .disabled(!viewModel.canTranslate)
         }
         .padding(.horizontal)
@@ -124,7 +124,7 @@ struct TranslationView: View {
     private var resultSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Picker("目标语言", selection: $viewModel.targetLanguage) {
+                Picker("Target Language", selection: $viewModel.targetLanguage) {
                     ForEach(SupportedLanguage.allCases) { lang in
                         Text(lang.displayName).tag(lang)
                     }
@@ -159,7 +159,7 @@ struct TranslationView: View {
         if viewModel.isLoading {
             HStack {
                 Spacer()
-                ProgressView("翻译中…")
+                ProgressView("Translating...")
                 Spacer()
             }
             .padding(.vertical, 16)
@@ -185,7 +185,7 @@ struct TranslationView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         } else {
-            Text("翻译结果将显示在这里")
+            Text("Translation results will appear here")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -197,14 +197,16 @@ struct TranslationView: View {
         HStack {
             Toggle(isOn: $viewModel.useLocalTranslation) {
                 Label(
-                    viewModel.shouldPreferLocalTranslation(settings: settings) ? "本地翻译（Apple）" : "云端 AI 翻译",
+                    viewModel.shouldPreferLocalTranslation(settings: settings)
+                        ? String(localized: "Local Translation (Apple)")
+                        : String(localized: "Cloud AI Translation"),
                     systemImage: viewModel.shouldPreferLocalTranslation(settings: settings) ? "iphone" : "cloud"
                 )
                 .font(.subheadline)
             }
 
             if !LLMManager.hasAvailableLLM(settings: settings) && !viewModel.useLocalTranslation {
-                Text("未配置 AI 服务，自动使用本地翻译")
+                Text("No AI service configured, using local translation")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

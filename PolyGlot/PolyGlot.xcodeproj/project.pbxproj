@@ -50,9 +50,13 @@
 		A10000280000000000000022 /* TTSManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000280000000000000022 /* TTSManager.swift */; };
 		A10000290000000000000023 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000290000000000000023 /* LanguageDetector.swift */; };
 		A1000030000000000000002A /* SpeakButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030000000000000002A /* SpeakButton.swift */; };
+		0DL10001000000000000F001 /* InterfaceLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DL10002000000000000F002 /* InterfaceLanguage.swift */; };
+		0DL10003000000000000F003 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0DL10004000000000000F004 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0DL10002000000000000F002 /* InterfaceLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceLanguage.swift; sourceTree = "<group>"; };
+		0DL10004000000000000F004 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0D309DC52F62775D001EF339 /* AppleDictionaryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleDictionaryService.swift; sourceTree = "<group>"; };
 		0D309DC72F627762001EF339 /* AppleIntelligenceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligenceService.swift; sourceTree = "<group>"; };
 		0DC05E3C2F625912009DD4F5 /* WordAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordAnalysisResult.swift; sourceTree = "<group>"; };
@@ -114,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				0DC05E452F625CE2009DD4F5 /* jlpt_kanji.json */,
+				0DL10004000000000000F004 /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -212,6 +217,7 @@
 				0DC05E422F625CC4009DD4F5 /* FuriganaParser.swift */,
 				0DC05E472F625CF6009DD4F5 /* JLPTKanjiSet.swift */,
 				0DC05E4B2F625E5D009DD4F5 /* Color+Theme.swift */,
+				0DL10002000000000000F002 /* InterfaceLanguage.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -266,9 +272,21 @@
 			knownRegions = (
 				en,
 				Base,
-				zh,
+				"zh-Hans",
+				"zh-Hant",
 				ja,
 				ko,
+				es,
+				hi,
+				ar,
+				"pt-BR",
+				ru,
+				de,
+				fr,
+				id,
+				it,
+				tr,
+				bn,
 			);
 			mainGroup = A50000010000000000000001;
 			productRefGroup = A50000080000000000000008 /* Products */;
@@ -287,6 +305,7 @@
 			files = (
 				A10000030000000000000003 /* Assets.xcassets in Resources */,
 				0DC05E462F625CE2009DD4F5 /* jlpt_kanji.json in Resources */,
+				0DL10003000000000000F003 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -338,6 +357,7 @@
 				A10000280000000000000022 /* TTSManager.swift in Sources */,
 				A10000290000000000000023 /* LanguageDetector.swift in Sources */,
 				A1000030000000000000002A /* SpeakButton.swift in Sources */,
+				0DL10001000000000000F001 /* InterfaceLanguage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

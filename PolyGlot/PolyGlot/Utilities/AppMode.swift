@@ -10,10 +10,10 @@ enum AppMode: String, CaseIterable, Codable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .dictionary: return "词典"
-        case .sentence: return "句子分析"
-        case .translation: return "翻译"
-        case .question: return "提问"
+        case .dictionary: return String(localized: "Dictionary")
+        case .sentence: return String(localized: "Sentence Analysis")
+        case .translation: return String(localized: "Translation")
+        case .question: return String(localized: "Question")
         }
     }
 

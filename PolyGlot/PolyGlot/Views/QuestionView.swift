@@ -17,7 +17,7 @@ struct QuestionView: View {
                 Divider()
                 responseArea
             }
-            .navigationTitle("提问")
+            .navigationTitle("Question")
         }
     }
 
@@ -34,7 +34,7 @@ struct QuestionView: View {
                 .focused($isEditorFocused)
                 .overlay(alignment: .topLeading) {
                     if viewModel.questionText.isEmpty {
-                        Text("输入任何语言的问题...")
+                        Text("Ask a question in any language...")
                             .font(.body)
                             .foregroundStyle(.tertiary)
                             .padding(.top, 14)
@@ -47,7 +47,7 @@ struct QuestionView: View {
             HStack {
                 Spacer()
                 if !viewModel.questionText.isEmpty {
-                    Button("清除", role: .destructive) {
+                    Button("Clear", role: .destructive) {
                         viewModel.clear()
                     }
                     .buttonStyle(.borderless)
@@ -56,12 +56,12 @@ struct QuestionView: View {
                 Button {
                     sendQuestion()
                 } label: {
-                    Label("发送", systemImage: "paperplane.fill")
+                    Label("Send", systemImage: "paperplane.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("发送问题")
-                .accessibilityHint("发送到 AI 获取回答")
+                .accessibilityLabel("Send Question")
+                .accessibilityHint("Send to AI for an answer")
                 .disabled(!viewModel.canSend)
             }
         }
@@ -74,7 +74,7 @@ struct QuestionView: View {
     @ViewBuilder
     private var responseArea: some View {
         if viewModel.isLoading {
-            LoadingView(message: "思考中...")
+            LoadingView(message: "Thinking...")
         } else if let error = viewModel.errorMessage {
             ScrollView {
                 ErrorBanner(message: error, retryAction: { sendQuestion() },
@@ -111,11 +111,11 @@ struct QuestionView: View {
             VStack(spacing: 16) {
                 EmptyStateView(
                     systemImage: "questionmark.bubble",
-                    title: "输入问题开始对话",
-                    subtitle: "支持中文、英语、日语、韩语提问"
+                    title: "Enter a question to start",
+                    subtitle: "Supports questions in Chinese, English, Japanese, Korean"
                 )
                 if !settings.hasActiveAPIKey && !AppleIntelligenceAvailability.isAvailable {
-                    Text("此功能需要配置 API Key 或使用支持 Apple Intelligence 的设备")
+                    Text("This feature requires an API Key or Apple Intelligence")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)

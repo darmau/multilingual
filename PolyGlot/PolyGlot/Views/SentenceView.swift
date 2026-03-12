@@ -22,7 +22,7 @@ struct SentenceView: View {
                 Divider()
                 resultArea
             }
-            .navigationTitle("句子分析")
+            .navigationTitle("Sentence Analysis")
             .onChange(of: viewModel.result?.inputSentence) { _, newSentence in
                 guard let newSentence, !newSentence.isEmpty,
                       let lang = viewModel.effectiveLanguage else { return }
@@ -46,7 +46,7 @@ struct SentenceView: View {
                     }
                     .overlay(alignment: .topLeading) {
                         if viewModel.inputText.isEmpty {
-                            Text("输入句子或段落...")
+                            Text("Enter a sentence or paragraph...")
                                 .font(.body)
                                 .foregroundStyle(.tertiary)
                                 .padding(.top, 8)
@@ -80,7 +80,7 @@ struct SentenceView: View {
             // Bottom row: language detection + submit
             HStack(spacing: 8) {
                 if let detected = viewModel.detectedLanguage, viewModel.manualLanguage == nil {
-                    Label("检测到: \(detected.displayName)", systemImage: "wand.and.stars")
+                    Label("Detected: \(detected.displayName)", systemImage: "wand.and.stars")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -89,14 +89,14 @@ struct SentenceView: View {
 
                 // Manual language picker
                 Menu {
-                    Button("自动检测") { viewModel.manualLanguage = nil }
+                    Button("Auto Detect") { viewModel.manualLanguage = nil }
                     Divider()
                     ForEach(SupportedLanguage.allCases) { lang in
                         Button(lang.displayName) { viewModel.manualLanguage = lang }
                     }
                 } label: {
                     Label(
-                        viewModel.manualLanguage.map { "输入: \($0.displayName)" } ?? "自动检测",
+                        viewModel.manualLanguage.map { String(localized: "Input: \($0.displayName)") } ?? String(localized: "Auto Detect"),
                         systemImage: "globe"
                     )
                     .font(.caption)
@@ -105,12 +105,12 @@ struct SentenceView: View {
                 Button {
                     submitAnalysis()
                 } label: {
-                    Label("分析", systemImage: "doc.text.magnifyingglass")
+                    Label("Analyze", systemImage: "doc.text.magnifyingglass")
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("分析句子")
-                .accessibilityHint("发送到 AI 进行语法分析")
+                .accessibilityLabel("Analyze Sentence")
+                .accessibilityHint("Send to AI for grammar analysis")
                 .disabled(viewModel.inputText.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal)
@@ -124,7 +124,7 @@ struct SentenceView: View {
     @ViewBuilder
     private var resultArea: some View {
         if viewModel.isLoading {
-            LoadingView(message: "AI 分析中...")
+            LoadingView(message: "AI analyzing...")
         } else if let error = viewModel.errorMessage {
             ScrollView {
                 ErrorBanner(
@@ -195,11 +195,11 @@ struct SentenceView: View {
                     VStack(spacing: 16) {
                         EmptyStateView(
                             systemImage: "text.bubble",
-                            title: "输入句子开始分析",
-                            subtitle: "支持中文、英文、日语、韩语"
+                            title: "Enter a sentence to start analysis",
+                            subtitle: "Supports Chinese, English, Japanese, Korean"
                         )
                         if !settings.hasActiveAPIKey && !AppleIntelligenceAvailability.isAvailable {
-                            Text("此功能需要配置 API Key 或使用支持 Apple Intelligence 的设备")
+                            Text("This feature requires an API Key or Apple Intelligence")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -208,7 +208,7 @@ struct SentenceView: View {
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("最近查询")
+                        Text("Recent Queries")
                             .font(.headline)
                             .padding(.horizontal)
 
@@ -265,15 +265,15 @@ private struct EnglishSentenceCard: View {
             }
 
             if let grammar = analysis.grammar, isInput {
-                GrammarDisclosure(title: "语法分析") {
+                GrammarDisclosure(title: String(localized: "Grammar Analysis")) {
                     if let structure = grammar.structure, !structure.isEmpty {
-                        GrammarInfoRow(label: "句型", value: structure)
+                        GrammarInfoRow(label: String(localized: "Sentence Structure"), value: structure)
                     }
                     if let tense = grammar.tense, !tense.isEmpty {
-                        GrammarInfoRow(label: "时态", value: tense)
+                        GrammarInfoRow(label: String(localized: "Tense"), value: tense)
                     }
                     if let voice = grammar.voice, !voice.isEmpty {
-                        GrammarInfoRow(label: "语态", value: voice)
+                        GrammarInfoRow(label: String(localized: "Voice (Grammar)"), value: voice)
                     }
                     if let clauses = grammar.clauses, !clauses.isEmpty {
                         ClausesList(clauses: clauses)
@@ -291,7 +291,7 @@ private struct ChineseSentenceCard: View {
     let analysis: ChineseSentenceAnalysis
 
     var body: some View {
-        SentenceLanguageSection(title: "中文", color: .language(.chinese)) {
+        SentenceLanguageSection(title: SupportedLanguage.chinese.displayName, color: .language(.chinese)) {
             // Chinese is translation-only, no SpeakButton
             Text(analysis.translation)
                 .font(.body)
@@ -306,7 +306,7 @@ private struct JapaneseSentenceCard: View {
     let isInput: Bool
 
     var body: some View {
-        SentenceLanguageSection(title: "日本語", color: .language(.japanese)) {
+        SentenceLanguageSection(title: SupportedLanguage.japanese.displayName, color: .language(.japanese)) {
             // FuriganaText handles inline ruby; translationReading shown as
             // a plain-kana fallback only when the translation contains no markup.
             TranslationRow(text: analysis.translation, language: .japanese)
@@ -318,12 +318,12 @@ private struct JapaneseSentenceCard: View {
             }
 
             if let grammar = analysis.grammar, isInput {
-                GrammarDisclosure(title: "语法分析") {
+                GrammarDisclosure(title: String(localized: "Grammar Analysis")) {
                     if let structure = grammar.structure, !structure.isEmpty {
-                        GrammarInfoRow(label: "文型", value: structure)
+                        GrammarInfoRow(label: String(localized: "Pattern"), value: structure)
                     }
                     if let politeness = grammar.politenessLevel, !politeness.isEmpty {
-                        GrammarInfoRow(label: "敬语等级", value: politeness)
+                        GrammarInfoRow(label: String(localized: "Politeness Level"), value: politeness)
                     }
                     if let particles = grammar.particles, !particles.isEmpty {
                         ParticlesSection(items: particles.map { ($0.particle, $0.function) })
@@ -345,16 +345,16 @@ private struct KoreanSentenceCard: View {
     let isInput: Bool
 
     var body: some View {
-        SentenceLanguageSection(title: "한국어", color: .language(.korean)) {
+        SentenceLanguageSection(title: SupportedLanguage.korean.displayName, color: .language(.korean)) {
             TranslationRow(text: analysis.translation, language: .korean)
 
             if let grammar = analysis.grammar, isInput {
-                GrammarDisclosure(title: "语法分析") {
+                GrammarDisclosure(title: String(localized: "Grammar Analysis")) {
                     if let structure = grammar.structure, !structure.isEmpty {
-                        GrammarInfoRow(label: "文型", value: structure)
+                        GrammarInfoRow(label: String(localized: "Pattern"), value: structure)
                     }
                     if let politeness = grammar.politenessLevel, !politeness.isEmpty {
-                        GrammarInfoRow(label: "敬语等级", value: politeness)
+                        GrammarInfoRow(label: String(localized: "Politeness Level"), value: politeness)
                     }
                     if let particles = grammar.particles, !particles.isEmpty {
                         ParticlesSection(items: particles.map { ($0.particle, $0.function) })
@@ -452,7 +452,7 @@ private struct ClausesList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("从句拆解")
+            Text("Clause Breakdown")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(clauses.enumerated()), id: \.offset) { i, clause in
@@ -475,7 +475,7 @@ private struct KeyPhrasesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("关键短语")
+            Text("Key Phrases")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
@@ -514,7 +514,7 @@ private struct ParticlesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("助词")
+            Text("Particles")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
@@ -539,7 +539,7 @@ private struct ConjugationSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("活用 / 变形")
+            Text("Conjugation")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(conjugations.enumerated()), id: \.offset) { _, c in
@@ -573,7 +573,7 @@ private struct JapanesePatternSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("句型模式")
+            Text("Sentence Patterns")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(patterns.enumerated()), id: \.offset) { _, p in
@@ -606,7 +606,7 @@ private struct KoreanPatternSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("句型模式")
+            Text("Sentence Patterns")
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
             ForEach(Array(patterns.enumerated()), id: \.offset) { _, p in

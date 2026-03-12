@@ -11,6 +11,7 @@ final class SettingsViewModel {
     var selectedTTSProvider: TTSProvider = .appleLocal
     var japaneseFuriganaLevel: JapaneseProficiency = .beginner
     var useSystemDictionary: Bool = true
+    var interfaceLanguage: InterfaceLanguage = .system
 
     var isTesting: Bool = false
     var testResultMessage: String = ""
@@ -27,6 +28,7 @@ final class SettingsViewModel {
         selectedTTSProvider = settings.selectedTTSProvider
         japaneseFuriganaLevel = settings.japaneseFuriganaLevel
         useSystemDictionary = settings.useSystemDictionary
+        interfaceLanguage = settings.interfaceLanguage
     }
 
     func save(to settings: Settings) {
@@ -37,6 +39,7 @@ final class SettingsViewModel {
         settings.selectedTTSProvider = selectedTTSProvider
         settings.japaneseFuriganaLevel = japaneseFuriganaLevel
         settings.useSystemDictionary = useSystemDictionary
+        settings.interfaceLanguage = interfaceLanguage
     }
 
     func testConnection(settings: Settings) async {
@@ -45,7 +48,7 @@ final class SettingsViewModel {
 
         do {
             let reply = try await llmManager.testConnection(settings: settings)
-            testResultMessage = "连接成功: \(reply)"
+            testResultMessage = String(localized: "Connection successful: \(reply)")
             testResultIsSuccess = true
         } catch {
             testResultMessage = error.localizedDescription

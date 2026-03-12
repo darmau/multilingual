@@ -19,6 +19,7 @@ struct SettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    languageCard
                     offlineCapabilitiesCard
                     apiKeysCard
                     providerCard
@@ -29,7 +30,7 @@ struct SettingsView: View {
                 .padding(.vertical, 12)
             }
             .background(.background.secondary)
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
             .onAppear {
                 viewModel.load(from: settings)
             }
@@ -40,6 +41,35 @@ struct SettingsView: View {
             .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.japaneseFuriganaLevel) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
+            .onChange(of: viewModel.interfaceLanguage) { _, _ in viewModel.save(to: settings) }
+        }
+    }
+
+    // MARK: - Language Card
+
+    private var languageCard: some View {
+        SettingsCard(
+            icon: "globe",
+            title: String(localized: "Interface Language"),
+            subtitle: String(localized: "App display language"),
+            iconColor: Color(red: 0.20, green: 0.55, blue: 0.95)
+        ) {
+            HStack(spacing: 12) {
+                Image(systemName: "character.bubble")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.20, green: 0.55, blue: 0.95))
+                    .frame(width: 28)
+                Text("Interface Language")
+                    .font(.subheadline)
+                Spacer()
+                Picker("", selection: $viewModel.interfaceLanguage) {
+                    ForEach(InterfaceLanguage.allCases) { lang in
+                        Text(lang.displayName).tag(lang)
+                    }
+                }
+                .labelsHidden()
+            }
+            .padding(.vertical, 4)
         }
     }
 
@@ -48,8 +78,8 @@ struct SettingsView: View {
     private var offlineCapabilitiesCard: some View {
         SettingsCard(
             icon: "arrow.down.circle.fill",
-            title: "离线与本地能力",
-            subtitle: "无需 API Key 即可使用的功能",
+            title: String(localized: "Offline & Local Capabilities"),
+            subtitle: String(localized: "Features available without API Key"),
             iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
         ) {
             VStack(spacing: 12) {
@@ -63,8 +93,8 @@ struct SettingsView: View {
                         Text("Apple Intelligence")
                             .font(.subheadline.weight(.medium))
                         Text(AppleIntelligenceAvailability.isAvailable
-                             ? "可用 — 将优先使用设备端 AI"
-                             : "当前设备不支持")
+                             ? "Available — Device AI will be prioritized"
+                             : "Not supported on this device")
                             .font(.caption)
                             .foregroundStyle(AppleIntelligenceAvailability.isAvailable ? .green : .secondary)
                     }
@@ -84,9 +114,9 @@ struct SettingsView: View {
                         .foregroundStyle(.blue)
                         .frame(width: 28)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("系统词典")
+                        Text("System Dictionary")
                             .font(.subheadline.weight(.medium))
-                        Text("词典模式下同时显示系统词典释义")
+                        Text("Show system dictionary definitions in dictionary mode")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -105,7 +135,7 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.green)
                             .frame(width: 28)
-                        Text("本地语音合成 (TTS)")
+                        Text("Local Text-to-Speech (TTS)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -114,7 +144,7 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.green)
                             .frame(width: 28)
-                        Text("Apple 翻译 (无需 API Key)")
+                        Text("Apple Translation (no API Key needed)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -123,7 +153,7 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.green)
                             .frame(width: 28)
-                        Text("系统词典查词")
+                        Text("System Dictionary Lookup")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -138,8 +168,8 @@ struct SettingsView: View {
     private var apiKeysCard: some View {
         SettingsCard(
             icon: "key.fill",
-            title: "API Keys（可选）",
-            subtitle: "配置后可使用云端 AI 深度分析",
+            title: String(localized: "API Keys (Optional)"),
+            subtitle: String(localized: "Configure to enable cloud AI analysis"),
             iconColor: Color(red: 0.95, green: 0.65, blue: 0.10)
         ) {
             VStack(spacing: 0) {
@@ -175,13 +205,13 @@ struct SettingsView: View {
     private var providerCard: some View {
         SettingsCard(
             icon: "cpu.fill",
-            title: "服务提供商",
-            subtitle: "选择 AI 和语音引擎",
+            title: String(localized: "Service Providers"),
+            subtitle: String(localized: "Choose AI and voice engines"),
             iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
         ) {
             VStack(spacing: 0) {
                 ProviderPickerRow(
-                    label: "LLM 引擎",
+                    label: String(localized: "LLM Engine"),
                     icon: "brain.head.profile",
                     iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
                 ) {
@@ -193,7 +223,7 @@ struct SettingsView: View {
                 }
                 Divider().padding(.leading, 44)
                 ProviderPickerRow(
-                    label: "语音合成",
+                    label: String(localized: "Voice Synthesis"),
                     icon: "waveform",
                     iconColor: Color(red: 0.20, green: 0.60, blue: 0.90)
                 ) {
@@ -212,8 +242,8 @@ struct SettingsView: View {
     private var japaneseCard: some View {
         SettingsCard(
             icon: "character.ja",
-            title: "日语设置",
-            subtitle: "控制振假名的显示级别",
+            title: String(localized: "Japanese Settings"),
+            subtitle: String(localized: "Control furigana display level"),
             iconColor: Color.languageJapanese
         ) {
             VStack(spacing: 12) {
@@ -222,7 +252,7 @@ struct SettingsView: View {
                         .font(.subheadline)
                         .foregroundStyle(Color.languageJapanese)
                         .frame(width: 28)
-                    Text("振假名级别")
+                    Text("Furigana Level")
                         .font(.subheadline)
                     Spacer()
                     Picker("", selection: $viewModel.japaneseFuriganaLevel) {
@@ -244,8 +274,8 @@ struct SettingsView: View {
     private var connectionTestCard: some View {
         SettingsCard(
             icon: "antenna.radiowaves.left.and.right",
-            title: "连接测试",
-            subtitle: "验证当前 LLM 服务是否可用",
+            title: String(localized: "Connection Test"),
+            subtitle: String(localized: "Verify current LLM service availability"),
             iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
         ) {
             VStack(spacing: 12) {
@@ -260,7 +290,7 @@ struct SettingsView: View {
                         } else {
                             Image(systemName: "bolt.fill")
                         }
-                        Text(viewModel.isTesting ? "测试中..." : "测试连接")
+                        Text(viewModel.isTesting ? "Testing..." : "Test Connection")
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
@@ -436,11 +466,11 @@ private struct ProficiencyScale: View {
                 }
             }
             HStack {
-                Text("全显注音")
+                Text("Show All Furigana")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                 Spacer()
-                Text("母语水平")
+                Text("Native Level")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
