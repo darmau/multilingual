@@ -17,66 +17,17 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("API Keys") {
-                    SecureField("OpenAI API Key", text: $viewModel.openaiAPIKey)
-                        .textContentType(.password)
-                    SecureField("Claude API Key", text: $viewModel.claudeAPIKey)
-                        .textContentType(.password)
-                    SecureField("Gemini API Key", text: $viewModel.geminiAPIKey)
-                        .textContentType(.password)
+            ScrollView {
+                VStack(spacing: 20) {
+                    apiKeysCard
+                    providerCard
+                    japaneseCard
+                    connectionTestCard
                 }
-
-                Section("LLM 供应商") {
-                    Picker("选择 LLM", selection: $viewModel.selectedLLMProvider) {
-                        ForEach(LLMProvider.allCases) { provider in
-                            Text(provider.displayName).tag(provider)
-                        }
-                    }
-                }
-
-                Section("TTS 供应商") {
-                    Picker("选择 TTS", selection: $viewModel.selectedTTSProvider) {
-                        ForEach(TTSProvider.allCases) { provider in
-                            Text(provider.displayName).tag(provider)
-                        }
-                    }
-                }
-
-                Section("日语水平") {
-                    Picker("振假名级别", selection: $viewModel.japaneseFuriganaLevel) {
-                        ForEach(JapaneseProficiency.allCases) { level in
-                            Text(level.displayName).tag(level)
-                        }
-                    }
-                }
-
-                Section("连接测试") {
-                    Button {
-                        Task {
-                            await viewModel.testConnection(settings: settings)
-                        }
-                    } label: {
-                        HStack {
-                            Text("Test Connection")
-                            Spacer()
-                            if viewModel.isTesting {
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(viewModel.isTesting)
-
-                    if viewModel.showTestResult {
-                        Label(
-                            viewModel.testResultMessage,
-                            systemImage: viewModel.testResultIsSuccess ? "checkmark.circle.fill" : "xmark.circle.fill"
-                        )
-                        .foregroundStyle(viewModel.testResultIsSuccess ? .green : .red)
-                        .font(.caption)
-                    }
-                }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
             }
+            .background(.background.secondary)
             .navigationTitle("设置")
             .onAppear {
                 viewModel.load(from: settings)
@@ -88,6 +39,353 @@ struct SettingsView: View {
             .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.japaneseFuriganaLevel) { _, _ in viewModel.save(to: settings) }
         }
+    }
+
+    // MARK: - API Keys Card
+
+    private var apiKeysCard: some View {
+        SettingsCard(
+            icon: "key.fill",
+            title: "API Keys",
+            subtitle: "配置各平台的访问密钥",
+            iconColor: Color(red: 0.95, green: 0.65, blue: 0.10)
+        ) {
+            VStack(spacing: 0) {
+                APIKeyRow(
+                    provider: "OpenAI",
+                    icon: "circle.fill",
+                    iconColor: Color(red: 0.09, green: 0.65, blue: 0.44),
+                    placeholder: "sk-...",
+                    text: $viewModel.openaiAPIKey
+                )
+                Divider().padding(.leading, 44)
+                APIKeyRow(
+                    provider: "Claude",
+                    icon: "sparkle",
+                    iconColor: Color(red: 0.78, green: 0.47, blue: 0.22),
+                    placeholder: "sk-ant-...",
+                    text: $viewModel.claudeAPIKey
+                )
+                Divider().padding(.leading, 44)
+                APIKeyRow(
+                    provider: "Gemini",
+                    icon: "wand.and.stars",
+                    iconColor: Color(red: 0.26, green: 0.52, blue: 0.96),
+                    placeholder: "AIza...",
+                    text: $viewModel.geminiAPIKey
+                )
+            }
+        }
+    }
+
+    // MARK: - Provider Card
+
+    private var providerCard: some View {
+        SettingsCard(
+            icon: "cpu.fill",
+            title: "服务提供商",
+            subtitle: "选择 AI 和语音引擎",
+            iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
+        ) {
+            VStack(spacing: 0) {
+                ProviderPickerRow(
+                    label: "LLM 引擎",
+                    icon: "brain.head.profile",
+                    iconColor: Color(red: 0.55, green: 0.35, blue: 0.90)
+                ) {
+                    Picker("", selection: $viewModel.selectedLLMProvider) {
+                        ForEach(LLMProvider.allCases) { provider in
+                            Text(provider.displayName).tag(provider)
+                        }
+                    }
+                }
+                Divider().padding(.leading, 44)
+                ProviderPickerRow(
+                    label: "语音合成",
+                    icon: "waveform",
+                    iconColor: Color(red: 0.20, green: 0.60, blue: 0.90)
+                ) {
+                    Picker("", selection: $viewModel.selectedTTSProvider) {
+                        ForEach(TTSProvider.allCases) { provider in
+                            Text(provider.displayName).tag(provider)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Japanese Card
+
+    private var japaneseCard: some View {
+        SettingsCard(
+            icon: "character.ja",
+            title: "日语设置",
+            subtitle: "控制振假名的显示级别",
+            iconColor: Color.languageJapanese
+        ) {
+            VStack(spacing: 12) {
+                HStack {
+                    Image(systemName: "graduationcap.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.languageJapanese)
+                        .frame(width: 28)
+                    Text("振假名级别")
+                        .font(.subheadline)
+                    Spacer()
+                    Picker("", selection: $viewModel.japaneseFuriganaLevel) {
+                        ForEach(JapaneseProficiency.allCases) { level in
+                            Text(level.displayName).tag(level)
+                        }
+                    }
+                }
+
+                // Visual proficiency scale
+                ProficiencyScale(selected: viewModel.japaneseFuriganaLevel)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - Connection Test Card
+
+    private var connectionTestCard: some View {
+        SettingsCard(
+            icon: "antenna.radiowaves.left.and.right",
+            title: "连接测试",
+            subtitle: "验证当前 LLM 服务是否可用",
+            iconColor: Color(red: 0.18, green: 0.72, blue: 0.45)
+        ) {
+            VStack(spacing: 12) {
+                Button {
+                    Task { await viewModel.testConnection(settings: settings) }
+                } label: {
+                    HStack(spacing: 8) {
+                        if viewModel.isTesting {
+                            ProgressView()
+                                .controlSize(.small)
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "bolt.fill")
+                        }
+                        Text(viewModel.isTesting ? "测试中..." : "测试连接")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        viewModel.isTesting
+                            ? Color.secondary.opacity(0.3)
+                            : Color(red: 0.18, green: 0.72, blue: 0.45)
+                    )
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .disabled(viewModel.isTesting)
+                .buttonStyle(.plain)
+
+                if viewModel.showTestResult {
+                    TestResultBanner(
+                        message: viewModel.testResultMessage,
+                        isSuccess: viewModel.testResultIsSuccess
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(duration: 0.35), value: viewModel.showTestResult)
+        }
+    }
+}
+
+// MARK: - SettingsCard
+
+private struct SettingsCard<Content: View>: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let iconColor: Color
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(iconColor.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(iconColor)
+                }
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.headline)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            Divider()
+                .padding(.horizontal, 16)
+
+            // Content
+            VStack(alignment: .leading, spacing: 0) {
+                content()
+            }
+            .padding(16)
+        }
+        .background(.background)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+    }
+}
+
+// MARK: - APIKeyRow
+
+private struct APIKeyRow: View {
+    let provider: String
+    let icon: String
+    let iconColor: Color
+    let placeholder: String
+    @Binding var text: String
+
+    @State private var isRevealed = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(provider)
+                    .font(.subheadline.weight(.medium))
+                if isRevealed {
+                    TextField(placeholder, text: $text)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.primary)
+                        .autocorrectionDisabled()
+                } else {
+                    SecureField(placeholder, text: $text)
+                        .font(.caption.monospaced())
+                }
+            }
+
+            Spacer()
+
+            Button {
+                isRevealed.toggle()
+            } label: {
+                Image(systemName: isRevealed ? "eye.slash" : "eye")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .buttonStyle(.plain)
+
+            // Filled indicator dot
+            Circle()
+                .fill(text.isEmpty ? Color.secondary.opacity(0.25) : Color.green)
+                .frame(width: 7, height: 7)
+        }
+        .padding(.vertical, 10)
+    }
+}
+
+// MARK: - ProviderPickerRow
+
+private struct ProviderPickerRow<PickerContent: View>: View {
+    let label: String
+    let icon: String
+    let iconColor: Color
+    @ViewBuilder let picker: () -> PickerContent
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(iconColor)
+                .frame(width: 28)
+            Text(label)
+                .font(.subheadline)
+            Spacer()
+            picker()
+                .labelsHidden()
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+// MARK: - ProficiencyScale
+
+private struct ProficiencyScale: View {
+    let selected: JapaneseProficiency
+
+    private let levels: [JapaneseProficiency] = [.beginner, .n5, .n4, .n3, .n2, .n1, .native]
+
+    private var selectedIndex: Int {
+        levels.firstIndex(of: selected) ?? 0
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
+                    Capsule()
+                        .fill(index <= selectedIndex ? Color.languageJapanese : Color.secondary.opacity(0.2))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 4)
+                }
+            }
+            HStack {
+                Text("全显注音")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Text("母语水平")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.top, 4)
+    }
+}
+
+// MARK: - TestResultBanner
+
+private struct TestResultBanner: View {
+    let message: String
+    let isSuccess: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .foregroundStyle(isSuccess ? Color.green : Color.red)
+                .font(.body)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(isSuccess ? Color.green : Color.red)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+        }
+        .padding(12)
+        .background((isSuccess ? Color.green : Color.red).opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(
+                    (isSuccess ? Color.green : Color.red).opacity(0.25),
+                    lineWidth: 1
+                )
+        )
     }
 }
 

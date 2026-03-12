@@ -14,20 +14,11 @@ struct TranslationView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Source section
                 sourceSection
-
-                // Swap & Translate buttons
                 controlBar
-
                 Divider()
-
-                // Result section
                 resultSection
-
                 Spacer(minLength: 0)
-
-                // Local/Cloud toggle
                 toggleBar
             }
             .navigationTitle("翻译")
@@ -50,6 +41,9 @@ struct TranslationView: View {
                 .pickerStyle(.menu)
                 #endif
 
+                // Language badge for source
+                LanguageBadge(language: viewModel.sourceLanguage, style: .outline)
+
                 Spacer()
 
                 SpeakButton(text: viewModel.sourceText, language: viewModel.sourceLanguage)
@@ -59,9 +53,19 @@ struct TranslationView: View {
                 .frame(minHeight: 80, maxHeight: 140)
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(Color.secondary.opacity(0.12))
+                .background(Color.secondary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .focused($isEditorFocused)
+                .overlay(alignment: .topLeading) {
+                    if viewModel.sourceText.isEmpty {
+                        Text("输入要翻译的文本...")
+                            .font(.body)
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 14)
+                            .padding(.leading, 12)
+                            .allowsHitTesting(false)
+                    }
+                }
         }
         .padding(.horizontal)
         .padding(.top)
@@ -76,6 +80,7 @@ struct TranslationView: View {
                     viewModel.clear()
                 }
                 .buttonStyle(.borderless)
+                .controlSize(.small)
             }
 
             Spacer()
@@ -127,6 +132,9 @@ struct TranslationView: View {
                 .pickerStyle(.menu)
                 #endif
 
+                // Language badge for target
+                LanguageBadge(language: viewModel.targetLanguage, style: .outline)
+
                 Spacer()
 
                 if !viewModel.translatedText.isEmpty {
@@ -134,36 +142,46 @@ struct TranslationView: View {
                 }
             }
 
-            ScrollView {
-                Group {
-                    if viewModel.isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView("翻译中…")
-                            Spacer()
-                        }
-                        .padding(.top, 24)
-                    } else if let error = viewModel.errorMessage {
-                        Label(error, systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
-                    } else if !viewModel.translatedText.isEmpty {
-                        Text(viewModel.translatedText)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    } else {
-                        Text("翻译结果将显示在这里")
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
+            resultContent
+                .frame(minHeight: 80)
                 .padding(8)
-            }
-            .frame(minHeight: 80)
-            .background(Color.secondary.opacity(0.12))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+                .background(Color.secondary.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .padding(.horizontal)
         .padding(.top, 8)
+    }
+
+    @ViewBuilder
+    private var resultContent: some View {
+        if viewModel.isLoading {
+            HStack {
+                Spacer()
+                ProgressView("翻译中…")
+                Spacer()
+            }
+            .padding(.vertical, 16)
+        } else if let error = viewModel.errorMessage {
+            Label(error, systemImage: "exclamationmark.triangle")
+                .foregroundStyle(.orange)
+                .font(.subheadline)
+                .padding(4)
+        } else if !viewModel.translatedText.isEmpty {
+            // Use FuriganaText for Japanese results
+            if viewModel.targetLanguage == .japanese {
+                FuriganaText(viewModel.translatedText, font: .body)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            } else {
+                Text(viewModel.translatedText)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            Text("翻译结果将显示在这里")
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: - Toggle Bar
@@ -171,7 +189,7 @@ struct TranslationView: View {
     private var toggleBar: some View {
         Toggle(isOn: $viewModel.useLocalTranslation) {
             Label(
-                viewModel.useLocalTranslation ? "本地翻译" : "云端 AI 翻译",
+                viewModel.useLocalTranslation ? "本地翻译（Apple）" : "云端 AI 翻译",
                 systemImage: viewModel.useLocalTranslation ? "iphone" : "cloud"
             )
             .font(.subheadline)
@@ -180,6 +198,8 @@ struct TranslationView: View {
         .padding(.vertical, 8)
     }
 }
+
+// MARK: - Local Translation Modifier
 
 /// ViewModifier that conditionally applies `.translationTask` on macOS 15+ / iOS 18+
 private struct LocalTranslationModifier: ViewModifier {

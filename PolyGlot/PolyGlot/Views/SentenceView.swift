@@ -4,9 +4,15 @@ import SwiftData
 struct SentenceView: View {
     @State private var viewModel = SentenceViewModel()
     @Query private var settingsList: [Settings]
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \QueryHistory.createdAt, order: .reverse) private var history: [QueryHistory]
 
     private var settings: Settings {
         settingsList.first ?? Settings()
+    }
+
+    private var sentenceHistory: [QueryHistory] {
+        history.filter { $0.mode == .sentence }
     }
 
     var body: some View {
@@ -109,9 +115,16 @@ struct SentenceView: View {
     @ViewBuilder
     private var resultArea: some View {
         if viewModel.isLoading {
-            loadingView
+            LoadingView(message: "AI 分析中...")
         } else if let error = viewModel.errorMessage {
-            errorView(message: error)
+            ScrollView {
+                ErrorBanner(
+                    message: error,
+                    rawResponse: viewModel.rawResponse,
+                    retryAction: { submitAnalysis() }
+                )
+                .padding()
+            }
         } else if let result = viewModel.result {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -131,7 +144,7 @@ struct SentenceView: View {
                 .padding()
             }
         } else {
-            emptyState
+            emptyStateWithHistory
         }
     }
 
@@ -163,59 +176,67 @@ struct SentenceView: View {
         }
     }
 
-    // MARK: - States
+    // MARK: - Empty State + History
 
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView().scaleEffect(1.5)
-            Text("正在分析...").foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    private var emptyStateWithHistory: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if sentenceHistory.isEmpty {
+                    EmptyStateView(
+                        systemImage: "text.bubble",
+                        title: "输入句子开始分析",
+                        subtitle: "支持中文、英文、日语、韩语"
+                    )
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("最近查询")
+                            .font(.headline)
+                            .padding(.horizontal)
 
-    private func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
-            Text(message)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            Button("重试") { submitAnalysis() }
-                .buttonStyle(.borderedProminent)
-
-            if let raw = viewModel.rawResponse {
-                Divider()
-                ScrollView {
-                    Text(raw)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .padding()
+                        ForEach(sentenceHistory.prefix(10)) { item in
+                            Button {
+                                viewModel.inputText = item.text
+                                viewModel.manualLanguage = item.language
+                                submitAnalysis()
+                            } label: {
+                                HStack(alignment: .top) {
+                                    Image(systemName: "clock")
+                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+                                        .padding(.top, 2)
+                                    Text(item.text)
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                    Spacer()
+                                    LanguageBadge(language: item.language, style: .outline)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 6)
+                            }
+                            .buttonStyle(.plain)
+                            Divider().padding(.leading)
+                        }
+                    }
+                    .padding(.top)
                 }
-                .frame(maxHeight: 200)
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.bubble")
-                .font(.system(size: 48))
-                .foregroundStyle(.tertiary)
-            Text("输入句子开始分析")
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Helper
 
     private func submitAnalysis() {
-        guard !viewModel.inputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        Task { await viewModel.analyze(settings: settings) }
+        let sentence = viewModel.inputText.trimmingCharacters(in: .whitespaces)
+        guard !sentence.isEmpty else { return }
+        Task {
+            await viewModel.analyze(settings: settings)
+            // Save to history on success
+            if viewModel.result != nil, let lang = viewModel.effectiveLanguage {
+                let entry = QueryHistory(text: sentence, language: lang, mode: .sentence)
+                modelContext.insert(entry)
+            }
+        }
     }
 }
 
@@ -226,7 +247,7 @@ private struct EnglishSentenceCard: View {
     let isInput: Bool
 
     var body: some View {
-        SentenceLanguageSection(title: "English", color: .blue) {
+        SentenceLanguageSection(title: "English", color: .language(.english)) {
             if let translation = analysis.translation, !translation.isEmpty {
                 TranslationRow(text: translation, language: .english)
             }
@@ -258,7 +279,7 @@ private struct ChineseSentenceCard: View {
     let analysis: ChineseSentenceAnalysis
 
     var body: some View {
-        SentenceLanguageSection(title: "中文", color: .red) {
+        SentenceLanguageSection(title: "中文", color: .language(.chinese)) {
             // Chinese is translation-only, no SpeakButton
             Text(analysis.translation)
                 .font(.body)
@@ -272,7 +293,7 @@ private struct JapaneseSentenceCard: View {
     let isInput: Bool
 
     var body: some View {
-        SentenceLanguageSection(title: "日本語", color: .purple) {
+        SentenceLanguageSection(title: "日本語", color: .language(.japanese)) {
             // FuriganaText handles inline ruby; translationReading shown as
             // a plain-kana fallback only when the translation contains no markup.
             TranslationRow(text: analysis.translation, language: .japanese)
@@ -311,7 +332,7 @@ private struct KoreanSentenceCard: View {
     let isInput: Bool
 
     var body: some View {
-        SentenceLanguageSection(title: "한국어", color: .green) {
+        SentenceLanguageSection(title: "한국어", color: .language(.korean)) {
             TranslationRow(text: analysis.translation, language: .korean)
 
             if let grammar = analysis.grammar, isInput {
@@ -349,17 +370,9 @@ private struct SentenceLanguageSection<Content: View>: View {
             Text(title)
                 .font(.headline)
                 .foregroundStyle(color)
-
             content()
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(color.opacity(0.25), lineWidth: 1)
-        )
+        .cardStyle(accentColor: color)
     }
 }
 
@@ -545,7 +558,7 @@ private struct JapanesePatternSection: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(p.pattern)
                         .font(.subheadline.bold())
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(Color.language(.japanese))
                     Text(p.meaning)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -556,7 +569,7 @@ private struct JapanesePatternSection: View {
                     }
                 }
                 .padding(8)
-                .background(.purple.opacity(0.07))
+                .background(Color.language(.japanese).opacity(0.07))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
@@ -575,13 +588,13 @@ private struct KoreanPatternSection: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(p.pattern)
                         .font(.subheadline.bold())
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.language(.korean))
                     Text(p.meaning)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 .padding(8)
-                .background(.green.opacity(0.07))
+                .background(Color.language(.korean).opacity(0.07))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
@@ -592,5 +605,5 @@ private struct KoreanPatternSection: View {
 
 #Preview {
     SentenceView()
-        .modelContainer(for: Settings.self, inMemory: true)
+        .modelContainer(for: [Settings.self, QueryHistory.self], inMemory: true)
 }

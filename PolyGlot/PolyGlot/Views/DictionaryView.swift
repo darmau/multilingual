@@ -4,9 +4,15 @@ import SwiftData
 struct DictionaryView: View {
     @State private var viewModel = DictionaryViewModel()
     @Query private var settingsList: [Settings]
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \QueryHistory.createdAt, order: .reverse) private var history: [QueryHistory]
 
     private var settings: Settings {
         settingsList.first ?? Settings()
+    }
+
+    private var dictionaryHistory: [QueryHistory] {
+        history.filter { $0.mode == .dictionary }
     }
 
     var body: some View {
@@ -93,9 +99,16 @@ struct DictionaryView: View {
     @ViewBuilder
     private var resultArea: some View {
         if viewModel.isLoading {
-            loadingView
+            LoadingView(message: "AI 分析中...")
         } else if let errorMessage = viewModel.errorMessage {
-            errorView(message: errorMessage)
+            ScrollView {
+                ErrorBanner(
+                    message: errorMessage,
+                    rawResponse: viewModel.rawResponse,
+                    retryAction: { submitSearch() }
+                )
+                .padding()
+            }
         } else if let result = viewModel.result {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -119,7 +132,7 @@ struct DictionaryView: View {
                 .padding()
             }
         } else {
-            emptyState
+            emptyStateWithHistory
         }
     }
 
@@ -138,7 +151,7 @@ struct DictionaryView: View {
             Spacer()
 
             if let lang = SupportedLanguage(rawValue: result.inputLanguage) {
-                languageBadge(lang)
+                LanguageBadge(language: lang)
             }
         }
     }
@@ -167,90 +180,69 @@ struct DictionaryView: View {
         }
     }
 
-    // MARK: - Loading / Error / Empty States
+    // MARK: - Empty State + History
 
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
-            Text("正在分析...")
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
+    private var emptyStateWithHistory: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if dictionaryHistory.isEmpty {
+                    EmptyStateView(
+                        systemImage: "text.magnifyingglass",
+                        title: "输入单词开始查词",
+                        subtitle: "支持中文、英文、日语、韩语"
+                    )
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("最近查询")
+                            .font(.headline)
+                            .padding(.horizontal)
 
-    private func errorView(message: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.largeTitle)
-                .foregroundStyle(.orange)
-            Text(message)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            Button("重试") {
-                submitSearch()
-            }
-            .buttonStyle(.borderedProminent)
-
-            // Show raw response if available
-            if let raw = viewModel.rawResponse {
-                Divider()
-                ScrollView {
-                    Text(raw)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .padding()
+                        ForEach(dictionaryHistory.prefix(10)) { item in
+                            Button {
+                                viewModel.searchText = item.text
+                                viewModel.manualLanguage = item.language
+                                submitSearch()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "clock")
+                                        .foregroundStyle(.secondary)
+                                        .font(.caption)
+                                    Text(item.text)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    LanguageBadge(language: item.language, style: .outline)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 6)
+                            }
+                            .buttonStyle(.plain)
+                            Divider().padding(.leading)
+                        }
+                    }
+                    .padding(.top)
                 }
-                .frame(maxHeight: 200)
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "text.magnifyingglass")
-                .font(.system(size: 48))
-                .foregroundStyle(.tertiary)
-            Text("输入单词开始查词")
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Helpers
 
     private func submitSearch() {
-        guard !viewModel.searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let word = viewModel.searchText.trimmingCharacters(in: .whitespaces)
+        guard !word.isEmpty else { return }
         Task {
             await viewModel.analyze(settings: settings)
+            // Save to history on success
+            if viewModel.result != nil, let lang = viewModel.effectiveLanguage {
+                let entry = QueryHistory(text: word, language: lang, mode: .dictionary)
+                modelContext.insert(entry)
+            }
         }
     }
 
     private func outputLanguages(for input: SupportedLanguage?) -> [SupportedLanguage] {
         guard let input else { return SupportedLanguage.allCases }
         return SupportedLanguage.allCases.filter { $0 != input }
-    }
-
-    private func languageBadge(_ language: SupportedLanguage) -> some View {
-        Text(language.displayName)
-            .font(.caption.bold())
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(languageColor(language).opacity(0.15))
-            .foregroundStyle(languageColor(language))
-            .clipShape(Capsule())
-    }
-
-    private func languageColor(_ language: SupportedLanguage) -> Color {
-        switch language {
-        case .english:  return .blue
-        case .chinese:  return .red
-        case .japanese: return .purple
-        case .korean:   return .green
-        }
     }
 }
 
@@ -260,7 +252,7 @@ private struct EnglishCard: View {
     let analysis: EnglishAnalysis
 
     var body: some View {
-        LanguageSection(title: "English", color: .blue) {
+        LanguageSection(title: "English", color: .language(.english)) {
             // Phonetic
             if let phonetic = analysis.phonetic, !phonetic.isEmpty {
                 InfoRow(label: "音标", value: phonetic)
@@ -303,7 +295,7 @@ private struct ChineseCard: View {
     let analysis: ChineseAnalysis
 
     var body: some View {
-        LanguageSection(title: "中文", color: .red) {
+        LanguageSection(title: "中文", color: .language(.chinese)) {
             HStack {
                 Text(analysis.word)
                     .font(.title2.bold())
@@ -328,7 +320,7 @@ private struct JapaneseCard: View {
     let analysis: JapaneseAnalysis
 
     var body: some View {
-        LanguageSection(title: "日本語", color: .purple) {
+        LanguageSection(title: "日本語", color: .language(.japanese)) {
             // Word + reading + speak
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 FuriganaText(analysis.word, font: .title2)
@@ -380,7 +372,7 @@ private struct KoreanCard: View {
     let analysis: KoreanAnalysis
 
     var body: some View {
-        LanguageSection(title: "한국어", color: .green) {
+        LanguageSection(title: "한국어", color: .language(.korean)) {
             // Word + reading + speak
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -425,7 +417,7 @@ private struct KoreanCard: View {
 
 // MARK: - Shared Sub-components
 
-/// A collapsible/non-collapsible section card per language.
+/// A card section per language using the shared cardStyle modifier.
 private struct LanguageSection<Content: View>: View {
     let title: String
     let color: Color
@@ -437,17 +429,9 @@ private struct LanguageSection<Content: View>: View {
                 .font(.headline)
                 .foregroundStyle(color)
                 .padding(.bottom, 2)
-
             content()
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.background.secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(color.opacity(0.25), lineWidth: 1)
-        )
+        .cardStyle(accentColor: color)
     }
 }
 
@@ -552,5 +536,5 @@ private struct WordListRow: View {
 
 #Preview {
     DictionaryView()
-        .modelContainer(for: Settings.self, inMemory: true)
+        .modelContainer(for: [Settings.self, QueryHistory.self], inMemory: true)
 }

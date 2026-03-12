@@ -7,6 +7,6 @@ struct PolyGlotApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(for: Settings.self)
+        .modelContainer(for: [Settings.self, QueryHistory.self])
     }
 }
