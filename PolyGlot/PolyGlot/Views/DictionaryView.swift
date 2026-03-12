@@ -756,189 +756,377 @@ private struct SystemDictionaryCard: View {
 // MARK: - macOS: Parsed System Dictionary View
 
 #if os(macOS)
-/// Parses the raw DCSCopyTextDefinition string into structured sections.
+/// Detects the script of the raw text and dispatches to the correct language parser.
 private struct SystemDictionaryParsedView: View {
     let raw: String
 
-    private struct ParsedEntry: Identifiable {
-        let id = UUID()
-        let pos: String?        // e.g. "adjective", "noun", "verb"
-        let definition: String
+    /// True when the text contains Hiragana/Katakana — Japanese dictionary format.
+    private var isJapanese: Bool {
+        raw.unicodeScalars.contains { $0.value >= 0x3040 && $0.value <= 0x30FF }
     }
 
-    private var phonetic: String? {
-        // Format: "word | phonetic | pos definition..."
-        // or:     "word | phonetic | verb (forms) 1 ..."
+    /// True when the text contains Hangul — Korean dictionary format.
+    private var isKorean: Bool {
+        raw.unicodeScalars.contains { $0.value >= 0xAC00 && $0.value <= 0xD7A3 }
+    }
+
+    var body: some View {
+        if isJapanese {
+            SysDictJapaneseView(raw: raw)
+        } else if isKorean {
+            SysDictKoreanView(raw: raw)
+        } else {
+            SysDictEnglishView(raw: raw)
+        }
+    }
+}
+
+// MARK: Shared entry model & rendering
+
+private struct SysDictEntry: Identifiable {
+    let id = UUID()
+    var pos: String?
+    var text: String
+}
+
+/// Renders a numbered list of entries with optional POS pills.
+private struct SysDictEntryList: View {
+    let entries: [SysDictEntry]
+    var textLocale: SupportedLanguage = .english
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(entries.prefix(8).enumerated()), id: \.offset) { idx, entry in
+                HStack(alignment: .top, spacing: 10) {
+                    Text("\(idx + 1)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.blue)
+                        .frame(width: 18, height: 18)
+                        .background(Color.blue.opacity(0.10))
+                        .clipShape(Circle())
+                        .padding(.top, 2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let pos = entry.pos, !pos.isEmpty {
+                            Text(pos)
+                                .font(.caption.bold())
+                                .foregroundStyle(.blue)
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.08))
+                                .clipShape(Capsule())
+                        }
+                        Text(entry.text)
+                            .font(.subheadline)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .modifier(LanguageLocaleModifier(language: textLocale))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Small inset box for etymology / notes.
+private struct SysDictMetaBox: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption.bold()).foregroundStyle(.secondary).chineseLocale()
+            Text(value)
+                .font(.caption).foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - English Parser
+// Raw format: "word | ˈphonetic | pos (forms) 1 def. • example. 2 def. ORIGIN ..."
+
+private struct SysDictEnglishView: View {
+    let raw: String
+
+    private let posKeywords = ["adjective", "adverb", "verb", "noun", "pronoun",
+                               "preposition", "conjunction", "interjection", "determiner",
+                               "exclamation", "predeterminer", "prefix", "suffix"]
+
+    // "word | phonetic | ..." — extract part[1]
+    var phonetic: String? {
         let parts = raw.components(separatedBy: " | ")
         guard parts.count >= 2 else { return nil }
         let candidate = parts[1].trimmingCharacters(in: .whitespaces)
-        // Phonetic contains IPA chars like ə ɪ ː ˈ ˌ or pipes — exclude plain words
-        let hasIPA = candidate.unicodeScalars.contains { sc in
-            sc.value > 0x0250 && sc.value < 0x02B0 ||  // IPA extensions
-            sc.value > 0x1D00 && sc.value < 0x1DBF ||  // phonetic extensions
-            "ˈˌˑ·|".unicodeScalars.contains(sc)
+        let hasIPA = candidate.unicodeScalars.contains {
+            ($0.value > 0x0250 && $0.value < 0x02B0) ||
+            ($0.value > 0x1D00 && $0.value < 0x1DBF) ||
+            "ˈˌˑ·".unicodeScalars.contains($0)
         }
         return hasIPA ? candidate : nil
     }
 
-    private var origin: String? {
-        guard let range = raw.range(of: "ORIGIN ") else { return nil }
-        var text = String(raw[range.upperBound...])
-        // Strip DERIVATIVES section if it appears after ORIGIN
-        if let deriv = text.range(of: "\nDERIVATIVES") {
-            text = String(text[..<deriv.lowerBound])
+    var origin: String? {
+        guard let r = raw.range(of: "ORIGIN ") else { return nil }
+        var s = String(raw[r.upperBound...])
+        for m in ["\nDERIVATIVES", "\nPHRASES", "\nPHRASAL", "\nUSAGE"] {
+            if let mr = s.range(of: m) { s = String(s[..<mr.lowerBound]) }
         }
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return s.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var entries: [ParsedEntry] {
-        // Strip the word (before first |), phonetic, and trailing DERIVATIVES/ORIGIN
+    var entries: [SysDictEntry] {
+        // Strip up to third " | " to get the definitions body
         var body = raw
-        // Remove "word | phonetic | " prefix
-        let pipeCount = body.components(separatedBy: " | ").count
-        if pipeCount >= 3 {
-            // Drop up to and including the second " | "
-            var stripped = body
-            if let r1 = stripped.range(of: " | ") {
-                stripped = String(stripped[r1.upperBound...])
-                if let r2 = stripped.range(of: " | ") {
-                    stripped = String(stripped[r2.upperBound...])
-                    body = stripped
-                }
-            }
+        var pipeCount = 0
+        var idx = body.startIndex
+        while pipeCount < 2, let r = body.range(of: " | ", range: idx..<body.endIndex) {
+            pipeCount += 1
+            idx = r.upperBound
         }
-        // Remove DERIVATIVES ... and ORIGIN ...
-        for marker in ["DERIVATIVES", "ORIGIN", "PHRASES", "PHRASAL VERBS", "USAGE"] {
-            if let r = body.range(of: "\(marker) ") {
-                body = String(body[..<r.lowerBound])
-            }
+        if pipeCount == 2 { body = String(body[idx...]) }
+
+        // Remove appendix sections
+        for m in ["DERIVATIVES", "ORIGIN", "PHRASES", "PHRASAL VERBS", "USAGE"] {
+            if let r = body.range(of: m) { body = String(body[..<r.lowerBound]) }
         }
         body = body.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // Known POS keywords
-        let posKeywords = ["adjective", "adverb", "verb", "noun", "pronoun",
-                           "preposition", "conjunction", "interjection", "determiner",
-                           "exclamation", "predeterminer", "prefix", "suffix"]
-
-        var results: [ParsedEntry] = []
-
-        // Split on numbered definitions: " 1 ", " 2 ", etc. using NSRegularExpression
-        let pattern = "\\s+\\d+\\s+"
-        let chunks: [String]
-        if let regex = try? NSRegularExpression(pattern: pattern) {
-            let nsBody = body as NSString
-            let fullRange = NSRange(location: 0, length: nsBody.length)
-            let matches = regex.matches(in: body, range: fullRange)
-            var parts: [String] = []
-            var lastEnd = 0
-            for match in matches {
-                let range = Range(match.range, in: body)!
-                parts.append(String(body[body.index(body.startIndex, offsetBy: lastEnd)..<range.lowerBound]))
-                lastEnd = body.distance(from: body.startIndex, to: range.upperBound)
+        // Split on " N " numbered markers
+        var chunks: [String] = []
+        if let regex = try? NSRegularExpression(pattern: "\\s+\\d+\\s+") {
+            var last = body.startIndex
+            for m in regex.matches(in: body, range: NSRange(body.startIndex..., in: body)) {
+                let r = Range(m.range, in: body)!
+                chunks.append(String(body[last..<r.lowerBound]))
+                last = r.upperBound
             }
-            parts.append(String(body[body.index(body.startIndex, offsetBy: lastEnd)...]))
-            chunks = parts
+            chunks.append(String(body[last...]))
         } else {
             chunks = [body]
         }
 
-        for chunk in chunks where !chunk.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty {
-            var text = chunk.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            // Remove inline examples after " | "
-            if let pipeRange = text.range(of: " | ") {
-                text = String(text[..<pipeRange.lowerBound])
-            }
-            // Detect leading POS word
-            var detectedPos: String? = nil
-            for pos in posKeywords {
-                if text.lowercased().hasPrefix(pos) {
-                    detectedPos = pos
-                    let afterPos = text.dropFirst(pos.count).trimmingCharacters(in: CharacterSet.whitespaces)
-                    // skip conjugation parens: "(runs, running, ...)"
-                    var remaining = afterPos
-                    if remaining.hasPrefix("(") {
-                        if let close = remaining.firstIndex(of: ")") {
-                            remaining = String(remaining[remaining.index(after: close)...])
-                                .trimmingCharacters(in: CharacterSet.whitespaces)
-                        }
+        return chunks.compactMap { chunk -> SysDictEntry? in
+            var s = chunk.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !s.isEmpty else { return nil }
+            // Drop example after " | "
+            if let pr = s.range(of: " | ") { s = String(s[..<pr.lowerBound]) }
+            // Detect POS prefix
+            var pos: String? = nil
+            for kw in posKeywords {
+                if s.lowercased().hasPrefix(kw) {
+                    pos = kw
+                    var rest = String(s.dropFirst(kw.count)).trimmingCharacters(in: .whitespaces)
+                    // skip "(forms)" paren
+                    if rest.hasPrefix("("), let cl = rest.firstIndex(of: ")") {
+                        rest = String(rest[rest.index(after: cl)...]).trimmingCharacters(in: .whitespaces)
                     }
-                    text = remaining
+                    s = rest
                     break
                 }
             }
-            // Clean up bullet points "•"
-            text = text.replacingOccurrences(of: " • ", with: "\n• ")
-            // Only keep first sentence for brevity (up to first full stop followed by space+capital)
-            if let dotRange = text.range(of: "\\.\\s+[A-Z]", options: .regularExpression) {
-                text = String(text[..<dotRange.lowerBound]) + "."
+            // Collapse bullet sub-senses into "; " and trim to first sentence
+            s = s.replacingOccurrences(of: " • ", with: "; ")
+            if let dr = s.range(of: "\\.\\s+[A-Z]", options: .regularExpression) {
+                s = String(s[..<dr.lowerBound]) + "."
             }
-            text = text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            if !text.isEmpty {
-                results.append(ParsedEntry(pos: detectedPos, definition: text))
-            }
+            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.isEmpty ? nil : SysDictEntry(pos: pos, text: s)
         }
-        return results.isEmpty ? [ParsedEntry(pos: nil, definition: body)] : results
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Phonetic
             if let phonetic {
-                Text(phonetic)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .italic()
+                Text(phonetic).font(.title3).italic().foregroundStyle(.secondary)
             }
-
-            // Definitions
             if !entries.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(entries.prefix(6).enumerated()), id: \.offset) { index, entry in
-                        HStack(alignment: .top, spacing: 10) {
-                            Text("\(index + 1)")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.blue)
-                                .frame(width: 18, height: 18)
-                                .background(Color.blue.opacity(0.10))
-                                .clipShape(Circle())
-                                .padding(.top, 2)
+                SysDictEntryList(entries: entries)
+            }
+            if let origin {
+                SysDictMetaBox(label: "词源", value: origin)
+            }
+        }
+    }
+}
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                if let pos = entry.pos {
-                                    Text(pos)
-                                        .font(.caption.bold())
-                                        .foregroundStyle(.blue)
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 2)
-                                        .background(Color.blue.opacity(0.08))
-                                        .clipShape(Capsule())
-                                }
-                                Text(entry.definition)
-                                    .font(.subheadline)
-                                    .textSelection(.enabled)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                        }
-                    }
+// MARK: - Japanese Parser
+// Raw format: "よみ 番号【漢字・漢字】（品詞）① 定義。 ② 定義。"
+
+private struct SysDictJapaneseView: View {
+    let raw: String
+
+    // Circle-number characters ①–⑳
+    private static let circles: [Character] = Array("①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳")
+
+    var reading: String? {
+        // Text before first 【 or （, stripping leading digit
+        var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let end = s.range(of: "【")?.lowerBound ?? s.range(of: "（")?.lowerBound
+        guard let e = end else { return nil }
+        s = String(s[..<e])
+        // Remove accent number like "2" or " 2 "
+        s = s.replacingOccurrences(of: "\\s*\\d+\\s*", with: "", options: .regularExpression)
+        s = s.trimmingCharacters(in: .whitespaces)
+        return s.isEmpty ? nil : s
+    }
+
+    var headword: String? {
+        guard let s = raw.range(of: "【"), let e = raw.range(of: "】") else { return nil }
+        return String(raw[s.upperBound..<e.lowerBound])
+    }
+
+    var partOfSpeech: String? {
+        // Find （）after 】 or after beginning
+        let search = raw.range(of: "】").map { raw[$0.upperBound...] } ?? raw[...]
+        guard let s = search.range(of: "（"), let e = search.range(of: "）"),
+              s.lowerBound < e.lowerBound else { return nil }
+        return String(search[s.upperBound..<e.lowerBound])
+    }
+
+    var entries: [SysDictEntry] {
+        // Body after the first （）closing paren
+        var body = raw
+        if let close = body.range(of: "）") {
+            body = String(body[close.upperBound...])
+        }
+        // Strip trailing metadata: 日葡, 可能xxx, etc.
+        for m in ["日葡", "可能", "ORIGIN", "参照", "→"] {
+            if let r = body.range(of: m) { body = String(body[..<r.lowerBound]) }
+        }
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Split on ①②③... circle numbers
+        var parts: [String] = []
+        var current = ""
+        for ch in body {
+            if Self.circles.contains(ch) {
+                let t = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !t.isEmpty { parts.append(t) }
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        let last = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !last.isEmpty { parts.append(last) }
+
+        // If no circle numbers found, try splitting on 。
+        if parts.isEmpty {
+            parts = body.components(separatedBy: "。").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        }
+
+        return parts.compactMap { part -> SysDictEntry? in
+            var s = part
+            // Strip quoted examples 「…」
+            if let regex = try? NSRegularExpression(pattern: "「[^」]*」") {
+                s = regex.stringByReplacingMatches(in: s, range: NSRange(s.startIndex..., in: s), withTemplate: "")
+            }
+            // Strip antonym reference ↔…
+            if let r = s.range(of: "↔") { s = String(s[..<r.lowerBound]) }
+            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                 .trimmingCharacters(in: CharacterSet(charactersIn: "。"))
+                 .trimmingCharacters(in: .whitespaces)
+            return s.isEmpty ? nil : SysDictEntry(pos: nil, text: s)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Headword + reading
+            VStack(alignment: .leading, spacing: 2) {
+                if let hw = headword {
+                    Text(hw).font(.title2.bold()).japaneseLocale()
+                }
+                if let rd = reading {
+                    Text(rd).font(.subheadline).foregroundStyle(.secondary).japaneseLocale()
                 }
             }
+            // POS pill
+            if let pos = partOfSpeech {
+                Text(pos)
+                    .font(.caption.bold()).foregroundStyle(.blue)
+                    .padding(.horizontal, 7).padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.08)).clipShape(Capsule())
+                    .japaneseLocale()
+            }
+            if !entries.isEmpty {
+                SysDictEntryList(entries: entries, textLocale: .japanese)
+            }
+        }
+    }
+}
 
-            // Origin
-            if let origin {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("词源")
-                        .font(.caption.bold())
-                        .foregroundStyle(.secondary)
-                    Text(origin)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.quaternary.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+// MARK: - Korean Parser
+// macOS 系统韩语词典格式: "단어 | 발음 | 품사 ① 定义 ② 定义"
+// 或者更简单的纯文本，按句号或换行分割
+
+private struct SysDictKoreanView: View {
+    let raw: String
+
+    private static let circles: [Character] = Array("①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳")
+
+    // Romanization / pronunciation hint after " | "
+    var pronunciation: String? {
+        let parts = raw.components(separatedBy: " | ")
+        guard parts.count >= 2 else { return nil }
+        let candidate = parts[1].trimmingCharacters(in: .whitespaces)
+        // Must be latin-ish (romanization) or contain ː
+        let isLatin = candidate.unicodeScalars.contains { $0.value < 0x0250 && $0.value > 0x0040 }
+        return (isLatin && !candidate.isEmpty) ? candidate : nil
+    }
+
+    var entries: [SysDictEntry] {
+        var body = raw
+        // Strip "word | pronunciation | " prefix when present
+        var pipeCount = 0
+        var idx = body.startIndex
+        while pipeCount < 2, let r = body.range(of: " | ", range: idx..<body.endIndex) {
+            pipeCount += 1
+            idx = r.upperBound
+        }
+        if pipeCount == 2 { body = String(body[idx...]) }
+        body = body.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Try splitting on circle numbers first
+        var parts: [String] = []
+        var current = ""
+        for ch in body {
+            if Self.circles.contains(ch) {
+                let t = current.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !t.isEmpty { parts.append(t) }
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        let last = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !last.isEmpty { parts.append(last) }
+
+        // Fallback: split on newline or ". "
+        if parts.count <= 1 {
+            parts = body.components(separatedBy: "\n").flatMap {
+                $0.components(separatedBy: ". ")
+            }.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        }
+
+        return parts.compactMap { part -> SysDictEntry? in
+            let s = part.trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.isEmpty ? nil : SysDictEntry(pos: nil, text: s)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if let pron = pronunciation {
+                Text(pron).font(.title3).italic().foregroundStyle(.secondary)
+            }
+            if !entries.isEmpty {
+                SysDictEntryList(entries: entries, textLocale: .korean)
             }
         }
     }
