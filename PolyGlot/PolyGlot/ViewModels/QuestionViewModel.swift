@@ -29,6 +29,7 @@ final class QuestionViewModel {
         currentTask = Task { await _send(settings: settings) }
     }
 
+    @MainActor
     private func _send(settings: Settings) async {
         let prompt = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { return }

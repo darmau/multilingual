@@ -73,22 +73,21 @@ struct QuestionView: View {
 
     @ViewBuilder
     private var responseArea: some View {
-        if viewModel.isLoading {
-            LoadingView(message: "Thinking...")
-        } else if let error = viewModel.errorMessage {
-            ScrollView {
-                ErrorBanner(message: error, retryAction: { sendQuestion() },
-                            isAPIKeyError: viewModel.isAPIKeyError)
-                    .padding()
-            }
-        } else if !viewModel.answerText.isEmpty {
+        if !viewModel.answerText.isEmpty {
+            // Show streaming/completed answer (prioritize content over loading state)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // Language badge for detected language
-                    if let lang = viewModel.answerLanguage {
-                        HStack {
+                    HStack {
+                        if let lang = viewModel.answerLanguage {
                             LanguageBadge(language: lang)
-                            Spacer()
+                        }
+                        Spacer()
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        if let lang = viewModel.answerLanguage, !viewModel.isLoading {
                             SpeakButton(text: viewModel.answerText, language: lang)
                         }
                     }
@@ -106,6 +105,14 @@ struct QuestionView: View {
                 .padding()
                 .cardStyle()
                 .padding()
+            }
+        } else if viewModel.isLoading {
+            LoadingView(message: "Thinking...")
+        } else if let error = viewModel.errorMessage {
+            ScrollView {
+                ErrorBanner(message: error, retryAction: { sendQuestion() },
+                            isAPIKeyError: viewModel.isAPIKeyError)
+                    .padding()
             }
         } else {
             VStack(spacing: 16) {
