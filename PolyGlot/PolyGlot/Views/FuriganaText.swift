@@ -1,14 +1,11 @@
 import SwiftUI
-import SwiftData
 
 // MARK: - FuriganaText
 
 /// Renders Japanese text with furigana (ruby) annotations above kanji.
 ///
 /// Text must be in the `{漢字|かな}` format. Segments without annotation are
-/// rendered as plain text. The `@Query`-based settings lookup is used to read
-/// the user's Japanese proficiency level and suppress furigana for kanji
-/// the user is expected to know.
+/// rendered as plain text. All annotated kanji are always shown with furigana.
 ///
 /// Example:
 ///   FuriganaText("{食|た}べ{物|もの}が{好|す}き", font: .body)
@@ -25,40 +22,9 @@ struct FuriganaText: View {
         self.color = color
     }
 
-    @Query private var settingsList: [Settings]
-    private var proficiency: JapaneseProficiency {
-        settingsList.first?.japaneseFuriganaLevel ?? .beginner
-    }
-
     var body: some View {
         let segments = FuriganaParser.parse(rawText)
-        let filtered = applyProficiencyFilter(to: segments)
-        FuriganaLayout(font: font, rubyFont: rubyFont, color: color, segments: filtered)
-    }
-
-    // MARK: - Proficiency Filter
-
-    /// Strips readings from annotated segments whose kanji are already known
-    /// at the user's proficiency level, converting them back to plain segments.
-    private func applyProficiencyFilter(to segments: [FuriganaSegment]) -> [FuriganaSegment] {
-        segments.map { segment in
-            guard case .annotated(let kanji, let reading) = segment else { return segment }
-
-            // Only suppress if every character in kanji is "known"
-            let allKnown = kanji.unicodeScalars.allSatisfy { scalar in
-                let ch = Character(scalar)
-                // Only filter CJK kanji, not kana or other chars
-                guard isKanji(ch) else { return true }
-                return !JLPTKanjiSet.shared.needsFurigana(kanji: String(ch), proficiency: proficiency)
-            }
-            return allKnown ? .plain(kanji) : .annotated(kanji: kanji, reading: reading)
-        }
-    }
-
-    private func isKanji(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x4E00 && scalar.value <= 0x9FFF)   // CJK Unified
-            || (scalar.value >= 0x3400 && scalar.value <= 0x4DBF)   // CJK Extension A
+        FuriganaLayout(font: font, rubyFont: rubyFont, color: color, segments: segments)
     }
 }
 
@@ -207,5 +173,4 @@ private struct FuriganaFlowLayout: Layout {
         FuriganaText("ひらがなだけのテキスト", font: .body)
     }
     .padding()
-    .modelContainer(for: Settings.self, inMemory: true)
 }

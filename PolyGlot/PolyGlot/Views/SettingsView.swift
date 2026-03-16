@@ -17,7 +17,6 @@ struct SettingsView: View {
                     offlineCapabilitiesCard
                     apiKeysCard
                     providerCard
-                    japaneseCard
                     connectionTestCard
                 }
                 .padding(.horizontal)
@@ -33,7 +32,6 @@ struct SettingsView: View {
             .onChange(of: viewModel.geminiAPIKey) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.selectedLLMProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.japaneseFuriganaLevel) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.interfaceLanguage) { _, _ in viewModel.save(to: settings) }
         }
@@ -229,38 +227,6 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Japanese Card
-
-    private var japaneseCard: some View {
-        SettingsCard(
-            icon: "character.ja",
-            title: "Japanese Settings",
-            subtitle: "Control furigana display level",
-            iconColor: Color.languageJapanese
-        ) {
-            VStack(spacing: 12) {
-                HStack {
-                    Image(systemName: "graduationcap.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.languageJapanese)
-                        .frame(width: 28)
-                    Text("Furigana Level")
-                        .font(.subheadline)
-                    Spacer()
-                    Picker("", selection: $viewModel.japaneseFuriganaLevel) {
-                        ForEach(JapaneseProficiency.allCases) { level in
-                            Text(level.displayName).tag(level)
-                        }
-                    }
-                }
-
-                // Visual proficiency scale
-                ProficiencyScale(selected: viewModel.japaneseFuriganaLevel)
-            }
-            .padding(.vertical, 4)
-        }
-    }
-
     // MARK: - Connection Test Card
 
     private var connectionTestCard: some View {
@@ -433,44 +399,6 @@ private struct ProviderPickerRow<PickerContent: View>: View {
                 .labelsHidden()
         }
         .padding(.vertical, 6)
-    }
-}
-
-// MARK: - ProficiencyScale
-
-private struct ProficiencyScale: View {
-    let selected: JapaneseProficiency
-
-    private let levels: [JapaneseProficiency] = [.beginner, .n5, .n4, .n3, .n2, .n1, .native]
-
-    private var selectedIndex: Int {
-        levels.firstIndex(of: selected) ?? 0
-    }
-
-    @Environment(\.layoutDirection) private var layoutDirection
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
-                ForEach(Array(levels.enumerated()), id: \.offset) { index, level in
-                    Capsule()
-                        .fill(index <= selectedIndex ? Color.languageJapanese : Color.secondary.opacity(0.2))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 4)
-                }
-            }
-            // Swap label sides for RTL layout so the scale reads correctly.
-            HStack {
-                Text(layoutDirection == .rightToLeft ? LocalizedStringKey("Native Level") : LocalizedStringKey("Show All Furigana"))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                Spacer()
-                Text(layoutDirection == .rightToLeft ? LocalizedStringKey("Show All Furigana") : LocalizedStringKey("Native Level"))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-            }
-        }
-        .padding(.top, 4)
     }
 }
 

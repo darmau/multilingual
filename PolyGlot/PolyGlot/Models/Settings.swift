@@ -8,7 +8,6 @@ final class Settings {
     var geminiAPIKey: String
     var selectedLLMProviderRaw: String
     var selectedTTSProviderRaw: String
-    var japaneseFuriganaLevelRaw: String
     var interfaceLanguageRaw: String
 
     /// When true, dictionary mode also queries the system dictionary alongside LLM.
@@ -22,11 +21,6 @@ final class Settings {
     var selectedTTSProvider: TTSProvider {
         get { TTSProvider(rawValue: selectedTTSProviderRaw) ?? .appleLocal }
         set { selectedTTSProviderRaw = newValue.rawValue }
-    }
-
-    var japaneseFuriganaLevel: JapaneseProficiency {
-        get { JapaneseProficiency(rawValue: japaneseFuriganaLevelRaw) ?? .beginner }
-        set { japaneseFuriganaLevelRaw = newValue.rawValue }
     }
 
     var interfaceLanguage: InterfaceLanguage {
@@ -54,7 +48,6 @@ final class Settings {
         geminiAPIKey: String = "",
         selectedLLMProvider: LLMProvider = .openai,
         selectedTTSProvider: TTSProvider = .appleLocal,
-        japaneseFuriganaLevel: JapaneseProficiency = .beginner,
         useSystemDictionary: Bool = true,
         interfaceLanguage: InterfaceLanguage = .system
     ) {
@@ -63,7 +56,6 @@ final class Settings {
         self.geminiAPIKey = geminiAPIKey
         self.selectedLLMProviderRaw = selectedLLMProvider.rawValue
         self.selectedTTSProviderRaw = selectedTTSProvider.rawValue
-        self.japaneseFuriganaLevelRaw = japaneseFuriganaLevel.rawValue
         self.useSystemDictionary = useSystemDictionary
         self.interfaceLanguageRaw = interfaceLanguage.rawValue
     }

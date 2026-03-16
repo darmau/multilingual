@@ -9,7 +9,6 @@ final class SettingsViewModel {
     var geminiAPIKey: String = ""
     var selectedLLMProvider: LLMProvider = .openai
     var selectedTTSProvider: TTSProvider = .appleLocal
-    var japaneseFuriganaLevel: JapaneseProficiency = .beginner
     var useSystemDictionary: Bool = true
     var interfaceLanguage: InterfaceLanguage = .system
 
@@ -26,7 +25,6 @@ final class SettingsViewModel {
         geminiAPIKey = settings.geminiAPIKey
         selectedLLMProvider = settings.selectedLLMProvider
         selectedTTSProvider = settings.selectedTTSProvider
-        japaneseFuriganaLevel = settings.japaneseFuriganaLevel
         useSystemDictionary = settings.useSystemDictionary
         interfaceLanguage = settings.interfaceLanguage
     }
@@ -37,7 +35,6 @@ final class SettingsViewModel {
         settings.geminiAPIKey = geminiAPIKey
         settings.selectedLLMProvider = selectedLLMProvider
         settings.selectedTTSProvider = selectedTTSProvider
-        settings.japaneseFuriganaLevel = japaneseFuriganaLevel
         settings.useSystemDictionary = useSystemDictionary
         settings.interfaceLanguage = interfaceLanguage
     }
