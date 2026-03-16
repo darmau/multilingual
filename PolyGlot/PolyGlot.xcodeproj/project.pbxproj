@@ -58,6 +58,11 @@
 		0DP00007000000000000F007 /* EnglishPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00008000000000000F008 /* EnglishPromptProvider.swift */; };
 		0DP00009000000000000F009 /* JapanesePromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP0000A000000000000F00A /* JapanesePromptProvider.swift */; };
 		0DP0000B000000000000F00B /* KoreanPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP0000C000000000000F00C /* KoreanPromptProvider.swift */; };
+		0DP10001000000000000F001 /* FrenchPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP0000E000000000000F00E /* FrenchPromptProvider.swift */; };
+		0DP10002000000000000F002 /* SpanishPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00010000000000000F010 /* SpanishPromptProvider.swift */; };
+		0DP10003000000000000F003 /* ArabicPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00012000000000000F012 /* ArabicPromptProvider.swift */; };
+		0DP10004000000000000F004 /* GermanPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00014000000000000F014 /* GermanPromptProvider.swift */; };
+		0DP10005000000000000F005 /* PortuguesePromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00016000000000000F016 /* PortuguesePromptProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -113,6 +118,11 @@
 		0DP00008000000000000F008 /* EnglishPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnglishPromptProvider.swift; sourceTree = "<group>"; };
 		0DP0000A000000000000F00A /* JapanesePromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JapanesePromptProvider.swift; sourceTree = "<group>"; };
 		0DP0000C000000000000F00C /* KoreanPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanPromptProvider.swift; sourceTree = "<group>"; };
+		0DP0000E000000000000F00E /* FrenchPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrenchPromptProvider.swift; sourceTree = "<group>"; };
+		0DP00010000000000000F010 /* SpanishPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpanishPromptProvider.swift; sourceTree = "<group>"; };
+		0DP00012000000000000F012 /* ArabicPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicPromptProvider.swift; sourceTree = "<group>"; };
+		0DP00014000000000000F014 /* GermanPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GermanPromptProvider.swift; sourceTree = "<group>"; };
+		0DP00016000000000000F016 /* PortuguesePromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortuguesePromptProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -206,6 +216,11 @@
 				0DP00008000000000000F008 /* EnglishPromptProvider.swift */,
 				0DP0000A000000000000F00A /* JapanesePromptProvider.swift */,
 				0DP0000C000000000000F00C /* KoreanPromptProvider.swift */,
+				0DP0000E000000000000F00E /* FrenchPromptProvider.swift */,
+				0DP00010000000000000F010 /* SpanishPromptProvider.swift */,
+				0DP00012000000000000F012 /* ArabicPromptProvider.swift */,
+				0DP00014000000000000F014 /* GermanPromptProvider.swift */,
+				0DP00016000000000000F016 /* PortuguesePromptProvider.swift */,
 			);
 			path = Prompts;
 			sourceTree = "<group>";
@@ -390,6 +405,11 @@
 				0DP00007000000000000F007 /* EnglishPromptProvider.swift in Sources */,
 				0DP00009000000000000F009 /* JapanesePromptProvider.swift in Sources */,
 				0DP0000B000000000000F00B /* KoreanPromptProvider.swift in Sources */,
+				0DP10001000000000000F001 /* FrenchPromptProvider.swift in Sources */,
+				0DP10002000000000000F002 /* SpanishPromptProvider.swift in Sources */,
+				0DP10003000000000000F003 /* ArabicPromptProvider.swift in Sources */,
+				0DP10004000000000000F004 /* GermanPromptProvider.swift in Sources */,
+				0DP10005000000000000F005 /* PortuguesePromptProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

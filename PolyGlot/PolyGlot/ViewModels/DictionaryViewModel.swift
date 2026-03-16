@@ -85,7 +85,12 @@ final class DictionaryViewModel {
         let hasLLM = LLMManager.hasAvailableLLM(settings: settings)
 
         if hasLLM {
-            let prompt = PromptBuilder.dictionaryPrompt(word: word, inputLanguage: language)
+            let prompt = PromptBuilder.dictionaryPrompt(
+                word: word,
+                inputLanguage: language,
+                learningLanguages: settings.learningLanguages,
+                nativeLanguage: settings.nativeLanguageName
+            )
             let systemPrompt = PromptBuilder.dictionarySystemPrompt
 
             do {

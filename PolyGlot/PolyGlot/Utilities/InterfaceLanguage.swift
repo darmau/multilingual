@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 
 /// Languages available for the app's user interface.
+/// Also serves as the user's native language setting.
 /// When `.system` is selected the app follows the device locale.
 enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable {
     case system
@@ -63,4 +64,79 @@ enum InterfaceLanguage: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// The language name used in LLM prompts for writing explanations.
+    /// For `.system`, resolves based on the device locale.
+    var promptLanguageName: String {
+        switch self {
+        case .system: return Self.resolveSystemPromptLanguageName()
+        case .en:     return "English"
+        case .zhHans: return "Simplified Chinese"
+        case .zhHant: return "Traditional Chinese"
+        case .es:     return "Spanish"
+        case .hi:     return "Hindi"
+        case .ar:     return "Arabic"
+        case .pt:     return "Portuguese"
+        case .ru:     return "Russian"
+        case .ja:     return "Japanese"
+        case .de:     return "German"
+        case .fr:     return "French"
+        case .ko:     return "Korean"
+        case .id:     return "Indonesian"
+        }
+    }
+
+    /// Maps to a SupportedLanguage if this interface language corresponds to one.
+    /// Used to determine which languages are "foreign" for the user.
+    var toSupportedLanguage: SupportedLanguage? {
+        switch self {
+        case .zhHans, .zhHant: return .chinese
+        case .en:     return .english
+        case .ja:     return .japanese
+        case .ko:     return .korean
+        case .fr:     return .french
+        case .es:     return .spanish
+        case .ar:     return .arabic
+        case .de:     return .german
+        case .pt:     return .portuguese
+        case .system: return Self.resolveSystemSupportedLanguage()
+        case .hi, .ru, .id: return nil
+        }
+    }
+
+    /// Resolves the system locale's prompt language name.
+    private static func resolveSystemPromptLanguageName() -> String {
+        let code = Locale.current.language.languageCode?.identifier ?? "en"
+        switch code {
+        case "zh": return "Chinese"
+        case "en": return "English"
+        case "ja": return "Japanese"
+        case "ko": return "Korean"
+        case "fr": return "French"
+        case "es": return "Spanish"
+        case "ar": return "Arabic"
+        case "de": return "German"
+        case "pt": return "Portuguese"
+        case "hi": return "Hindi"
+        case "ru": return "Russian"
+        case "id": return "Indonesian"
+        default:   return "English"
+        }
+    }
+
+    /// Resolves the system locale to a SupportedLanguage if possible.
+    private static func resolveSystemSupportedLanguage() -> SupportedLanguage? {
+        let code = Locale.current.language.languageCode?.identifier ?? "en"
+        switch code {
+        case "zh": return .chinese
+        case "en": return .english
+        case "ja": return .japanese
+        case "ko": return .korean
+        case "fr": return .french
+        case "es": return .spanish
+        case "ar": return .arabic
+        case "de": return .german
+        case "pt": return .portuguese
+        default:   return nil
+        }
+    }
 }

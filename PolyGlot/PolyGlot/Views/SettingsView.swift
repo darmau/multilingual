@@ -14,6 +14,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     languageCard
+                    learningLanguagesCard
                     offlineCapabilitiesCard
                     apiKeysCard
                     providerCard
@@ -33,17 +34,21 @@ struct SettingsView: View {
             .onChange(of: viewModel.selectedLLMProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
             .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.interfaceLanguage) { _, _ in viewModel.save(to: settings) }
+            .onChange(of: viewModel.interfaceLanguage) { _, _ in
+                viewModel.syncLearningLanguagesWithNative()
+                viewModel.save(to: settings)
+            }
+            .onChange(of: viewModel.learningLanguages) { _, _ in viewModel.save(to: settings) }
         }
     }
 
-    // MARK: - Language Card
+    // MARK: - Language Card (Interface/Native Language)
 
     private var languageCard: some View {
         SettingsCard(
             icon: "globe",
             title: "Interface Language",
-            subtitle: "App display language",
+            subtitle: "App display language & native language",
             iconColor: Color(red: 0.20, green: 0.55, blue: 0.95)
         ) {
             HStack(spacing: 12) {
@@ -62,6 +67,77 @@ struct SettingsView: View {
                 .labelsHidden()
             }
             .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - Learning Languages Card
+
+    private var learningLanguagesCard: some View {
+        SettingsCard(
+            icon: "book.fill",
+            title: "Learning Languages",
+            subtitle: "Choose up to 3 languages to learn",
+            iconColor: Color(red: 0.62, green: 0.25, blue: 0.83)
+        ) {
+            VStack(spacing: 12) {
+                // Current learning languages
+                ForEach(Array(viewModel.learningLanguages.enumerated()), id: \.element) { index, lang in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(Color.language(lang))
+                            .frame(width: 8, height: 8)
+                        Text(lang.displayName)
+                            .font(.subheadline.weight(.medium))
+                        Spacer()
+                        if viewModel.learningLanguages.count > 1 {
+                            Button {
+                                viewModel.removeLanguage(at: index)
+                            } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .foregroundStyle(.red.opacity(0.7))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    if index < viewModel.learningLanguages.count - 1 {
+                        Divider().padding(.leading, 28)
+                    }
+                }
+
+                // Add language button
+                if viewModel.canAddMoreLanguages {
+                    Divider()
+                    Menu {
+                        ForEach(viewModel.availableLanguagesToAdd) { lang in
+                            Button(lang.displayName) {
+                                viewModel.addLanguage(lang)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(Color(red: 0.62, green: 0.25, blue: 0.83))
+                            Text("Add Language")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color(red: 0.62, green: 0.25, blue: 0.83))
+                            Spacer()
+                            Text("\(viewModel.learningLanguages.count)/3")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    HStack {
+                        Spacer()
+                        Text("Maximum 3 languages reached")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
         }
     }
 

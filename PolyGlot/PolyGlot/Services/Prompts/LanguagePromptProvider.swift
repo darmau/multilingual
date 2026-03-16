@@ -12,18 +12,22 @@ protocol LanguagePromptProvider {
     // MARK: - Dictionary Mode
 
     /// Returns the JSON template block for dictionary word analysis.
-    /// - Parameter detailed: `true` when this language is the input language
-    ///   (include etymology, synonyms, conjugation, etc.);
-    ///   `false` for output languages (abbreviated).
-    func dictionaryBlock(detailed: Bool) -> String
+    /// - Parameters:
+    ///   - detailed: `true` when this language is the input language
+    ///     (include etymology, synonyms, conjugation, etc.);
+    ///     `false` for output languages (abbreviated).
+    ///   - nativeLanguage: The user's native language name for writing definitions/explanations.
+    func dictionaryBlock(detailed: Bool, nativeLanguage: String) -> String
 
     // MARK: - Sentence Mode
 
     /// Returns the JSON template block for sentence grammar analysis.
-    /// - Parameter isInput: `true` when this language is the input language
-    ///   (include full grammar breakdown); `false` for output languages
-    ///   (translation only, grammar: null).
-    func sentenceBlock(isInput: Bool) -> String
+    /// - Parameters:
+    ///   - isInput: `true` when this language is the input language
+    ///     (include full grammar breakdown); `false` for output languages
+    ///     (translation only, grammar: null).
+    ///   - nativeLanguage: The user's native language name for writing explanations.
+    func sentenceBlock(isInput: Bool, nativeLanguage: String) -> String
 
     // MARK: - Translation Mode
 

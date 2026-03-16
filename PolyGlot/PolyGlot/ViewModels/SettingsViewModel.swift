@@ -11,6 +11,7 @@ final class SettingsViewModel {
     var selectedTTSProvider: TTSProvider = .appleLocal
     var useSystemDictionary: Bool = true
     var interfaceLanguage: InterfaceLanguage = .system
+    var learningLanguages: [SupportedLanguage] = [.english]
 
     var isTesting: Bool = false
     var testResultMessage: String = ""
@@ -18,6 +19,19 @@ final class SettingsViewModel {
     var showTestResult: Bool = false
 
     private let llmManager = LLMManager()
+
+    /// Available languages to add (not already in learning list, not native language).
+    var availableLanguagesToAdd: [SupportedLanguage] {
+        let native = interfaceLanguage.toSupportedLanguage
+        return SupportedLanguage.allCases.filter { lang in
+            lang != native && !learningLanguages.contains(lang)
+        }
+    }
+
+    /// Whether the user can add more learning languages (max 3).
+    var canAddMoreLanguages: Bool {
+        learningLanguages.count < 3
+    }
 
     func load(from settings: Settings) {
         openaiAPIKey = settings.openaiAPIKey
@@ -27,6 +41,11 @@ final class SettingsViewModel {
         selectedTTSProvider = settings.selectedTTSProvider
         useSystemDictionary = settings.useSystemDictionary
         interfaceLanguage = settings.interfaceLanguage
+        learningLanguages = settings.learningLanguages
+        // If learning languages is empty (e.g., first launch after migration), set defaults
+        if learningLanguages.isEmpty {
+            learningLanguages = Settings.defaultLearningLanguages(for: interfaceLanguage)
+        }
     }
 
     func save(to settings: Settings) {
@@ -37,6 +56,29 @@ final class SettingsViewModel {
         settings.selectedTTSProvider = selectedTTSProvider
         settings.useSystemDictionary = useSystemDictionary
         settings.interfaceLanguage = interfaceLanguage
+        settings.learningLanguages = learningLanguages
+    }
+
+    /// Remove a language from the learning list at the given index.
+    func removeLanguage(at index: Int) {
+        guard learningLanguages.indices.contains(index) else { return }
+        learningLanguages.remove(at: index)
+    }
+
+    /// Add a language to the learning list.
+    func addLanguage(_ language: SupportedLanguage) {
+        guard canAddMoreLanguages, !learningLanguages.contains(language) else { return }
+        learningLanguages.append(language)
+    }
+
+    /// Called when interfaceLanguage changes to remove conflicts with native language.
+    func syncLearningLanguagesWithNative() {
+        if let native = interfaceLanguage.toSupportedLanguage {
+            learningLanguages.removeAll { $0 == native }
+        }
+        if learningLanguages.isEmpty {
+            learningLanguages = Settings.defaultLearningLanguages(for: interfaceLanguage)
+        }
     }
 
     func testConnection(settings: Settings) async {

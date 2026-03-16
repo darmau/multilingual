@@ -53,6 +53,11 @@ final class OpenAITTSService: TTSServiceProtocol {
         case .japanese: return "nova"
         case .korean: return "shimmer"
         case .chinese: return "alloy"
+        case .french: return "nova"
+        case .spanish: return "nova"
+        case .arabic: return "alloy"
+        case .german: return "alloy"
+        case .portuguese: return "nova"
         }
     }
 

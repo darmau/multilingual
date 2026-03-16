@@ -14,8 +14,6 @@ final class QuestionViewModel {
     private let llmManager = LLMManager()
     private var currentTask: Task<Void, Never>?
 
-    private let systemPrompt = PromptBuilder.questionSystemPrompt
-
     var isAPIKeyError: Bool {
         guard let msg = errorMessage else { return false }
         return msg == LLMError.missingAPIKey.errorDescription
@@ -42,6 +40,7 @@ final class QuestionViewModel {
 
         defer { isLoading = false }
 
+        let systemPrompt = PromptBuilder.questionSystemPrompt(nativeLanguage: settings.nativeLanguageName)
         do {
             for try await chunk in llmManager.streamPrompt(prompt, systemPrompt: systemPrompt, settings: settings) {
                 guard !Task.isCancelled else { return }

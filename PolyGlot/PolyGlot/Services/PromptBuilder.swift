@@ -11,13 +11,26 @@ struct PromptBuilder {
     """
 
     /// Builds a user prompt for dictionary word analysis.
-    static func dictionaryPrompt(word: String, inputLanguage: SupportedLanguage) -> String {
+    /// - Parameters:
+    ///   - word: The word to analyze.
+    ///   - inputLanguage: The detected/selected language of the input word.
+    ///   - learningLanguages: The user's target learning languages.
+    ///   - nativeLanguage: The user's native language name for explanations.
+    static func dictionaryPrompt(
+        word: String,
+        inputLanguage: SupportedLanguage,
+        learningLanguages: [SupportedLanguage],
+        nativeLanguage: String
+    ) -> String {
         let languageName = inputLanguage.promptName
         let inputProvider = LanguagePromptRegistry.provider(for: inputLanguage)
-        let outputProviders = LanguagePromptRegistry.outputProviders(for: inputLanguage)
 
-        var blocks = [inputProvider.dictionaryBlock(detailed: true)]
-        blocks += outputProviders.map { $0.dictionaryBlock(detailed: false) }
+        // Output languages = learning languages minus the input language
+        let outputLanguages = learningLanguages.filter { $0 != inputLanguage }
+        let outputProviders = LanguagePromptRegistry.outputProviders(for: outputLanguages)
+
+        var blocks = [inputProvider.dictionaryBlock(detailed: true, nativeLanguage: nativeLanguage)]
+        blocks += outputProviders.map { $0.dictionaryBlock(detailed: false, nativeLanguage: nativeLanguage) }
         let analysesBlock = blocks.joined(separator: ",\n")
 
         return """
@@ -29,7 +42,7 @@ struct PromptBuilder {
         \(analysesBlock)
           }
         }
-        All definitions and etymologies should be written in Chinese (中文). Examples should be in the target language. For Japanese text, include furigana using the format {漢字|かな} for all kanji.
+        All definitions and etymologies should be written in \(nativeLanguage). Examples should be in the target language. For Japanese text, include furigana using the format {漢字|かな} for all kanji.
         """
     }
 
@@ -40,13 +53,20 @@ struct PromptBuilder {
     """
 
     /// Builds a user prompt for sentence grammar analysis.
-    static func sentencePrompt(sentence: String, inputLanguage: SupportedLanguage) -> String {
+    static func sentencePrompt(
+        sentence: String,
+        inputLanguage: SupportedLanguage,
+        learningLanguages: [SupportedLanguage],
+        nativeLanguage: String
+    ) -> String {
         let languageName = inputLanguage.promptName
         let inputProvider = LanguagePromptRegistry.provider(for: inputLanguage)
-        let outputProviders = LanguagePromptRegistry.outputProviders(for: inputLanguage)
 
-        var blocks = [inputProvider.sentenceBlock(isInput: true)]
-        blocks += outputProviders.map { $0.sentenceBlock(isInput: false) }
+        let outputLanguages = learningLanguages.filter { $0 != inputLanguage }
+        let outputProviders = LanguagePromptRegistry.outputProviders(for: outputLanguages)
+
+        var blocks = [inputProvider.sentenceBlock(isInput: true, nativeLanguage: nativeLanguage)]
+        blocks += outputProviders.map { $0.sentenceBlock(isInput: false, nativeLanguage: nativeLanguage) }
         let analysesBlock = blocks.joined(separator: ",\n")
 
         return """
@@ -58,7 +78,7 @@ struct PromptBuilder {
         \(analysesBlock)
           }
         }
-        All grammar explanations and meanings must be written in Chinese (中文). Translations should be accurate and natural. For Japanese text (translations and readings), always include furigana using the format {漢字|かな} for all kanji.
+        All grammar explanations and meanings must be written in \(nativeLanguage). Translations should be accurate and natural. For Japanese text (translations and readings), always include furigana using the format {漢字|かな} for all kanji.
         """
     }
 
@@ -72,7 +92,7 @@ struct PromptBuilder {
 
     // MARK: - Question Mode
 
-    static let questionSystemPrompt = """
-    You are a helpful multilingual assistant. Respond in the same language the user used to ask the question. Be concise and educational.
-    """
+    static func questionSystemPrompt(nativeLanguage: String) -> String {
+        "You are a helpful multilingual assistant. Respond in \(nativeLanguage). Be concise and educational."
+    }
 }

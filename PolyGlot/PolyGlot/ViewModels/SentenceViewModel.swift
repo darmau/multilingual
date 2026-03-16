@@ -60,7 +60,12 @@ final class SentenceViewModel {
 
         defer { isLoading = false }
 
-        let prompt = PromptBuilder.sentencePrompt(sentence: sentence, inputLanguage: language)
+        let prompt = PromptBuilder.sentencePrompt(
+            sentence: sentence,
+            inputLanguage: language,
+            learningLanguages: settings.learningLanguages,
+            nativeLanguage: settings.nativeLanguageName
+        )
         let systemPrompt = PromptBuilder.sentenceSystemPrompt
 
         do {

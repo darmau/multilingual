@@ -145,8 +145,8 @@ struct SentenceView: View {
                         languageSection(for: lang, analyses: result.analyses, isInput: true)
                     }
 
-                    // Other languages
-                    let others = SupportedLanguage.allCases.filter { $0 != inputLang }
+                    // Other languages (from learning languages)
+                    let others = settings.learningLanguages.filter { $0 != inputLang }
                     ForEach(others, id: \.self) { lang in
                         languageSection(for: lang, analyses: result.analyses, isInput: false)
                     }
@@ -182,6 +182,10 @@ struct SentenceView: View {
         case .korean:
             if let a = analyses.korean {
                 KoreanSentenceCard(analysis: a, isInput: isInput)
+            }
+        default:
+            if let a = analyses.analysis(for: language) {
+                GenericSentenceCard(analysis: a, language: language, isInput: isInput)
             }
         }
     }
@@ -366,6 +370,122 @@ private struct KoreanSentenceCard: View {
                         KoreanPatternSection(patterns: patterns)
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Generic Sentence Card (French, Spanish, Arabic, German, Portuguese, etc.)
+
+private struct GenericSentenceCard: View {
+    let analysis: GenericSentenceAnalysis
+    let language: SupportedLanguage
+    let isInput: Bool
+
+    var body: some View {
+        SentenceLanguageSection(title: language.displayName, color: .language(language)) {
+            if let translation = analysis.translation, !translation.isEmpty {
+                TranslationRow(text: translation, language: language)
+            }
+
+            if let grammar = analysis.grammar, isInput {
+                GrammarDisclosure(title: String(localized: "Grammar Analysis")) {
+                    if let structure = grammar.structure, !structure.isEmpty {
+                        GrammarInfoRow(label: String(localized: "Sentence Structure"), value: structure)
+                    }
+                    if let tense = grammar.tense, !tense.isEmpty {
+                        GrammarInfoRow(label: String(localized: "Tense"), value: tense)
+                    }
+                    if let voice = grammar.voice, !voice.isEmpty {
+                        GrammarInfoRow(label: String(localized: "Voice (Grammar)"), value: voice)
+                    }
+                    if let mood = grammar.mood, !mood.isEmpty {
+                        GrammarInfoRow(label: String(localized: "Mood"), value: mood)
+                    }
+                    if let caseUsage = grammar.caseUsage, !caseUsage.isEmpty {
+                        GrammarInfoRow(label: String(localized: "Case Usage"), value: caseUsage)
+                    }
+                    if let clauses = grammar.clauses, !clauses.isEmpty {
+                        ClausesList(clauses: clauses)
+                    }
+                    if let phrases = grammar.keyPhrases, !phrases.isEmpty {
+                        GenericKeyPhrasesSection(phrases: phrases, language: language)
+                    }
+                    if let patterns = grammar.keyPatterns, !patterns.isEmpty {
+                        GenericPatternSection(patterns: patterns, language: language)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct GenericKeyPhrasesSection: View {
+    let phrases: [GenericKeyPhrase]
+    let language: SupportedLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Key Phrases")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+            ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(phrase.phrase)
+                            .font(.subheadline.bold())
+                            .modifier(LanguageLocaleModifier(language: language))
+                        SpeakButton(text: phrase.phrase, language: language)
+                            .font(.caption)
+                    }
+                    Text(phrase.explanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let gp = phrase.grammarPoint, !gp.isEmpty {
+                        Text(gp)
+                            .font(.caption)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.language(language).opacity(0.1))
+                            .foregroundStyle(Color.language(language))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                }
+                .padding(8)
+                .background(.quaternary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+        }
+    }
+}
+
+private struct GenericPatternSection: View {
+    let patterns: [GenericKeyPattern]
+    let language: SupportedLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Sentence Patterns")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+            ForEach(Array(patterns.enumerated()), id: \.offset) { _, p in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(p.pattern)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(Color.language(language))
+                        .modifier(LanguageLocaleModifier(language: language))
+                    Text(p.meaning)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let usage = p.usage, !usage.isEmpty {
+                        Text(usage)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(8)
+                .background(Color.language(language).opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
     }

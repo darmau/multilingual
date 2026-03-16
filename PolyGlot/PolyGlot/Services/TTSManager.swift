@@ -14,9 +14,6 @@ final class TTSManager {
     private var currentTask: Task<Void, Never>?
 
     func speak(text: String, language: SupportedLanguage, settings: Settings) {
-        // 中文不需要朗读
-        guard language != .chinese else { return }
-
         // Cancel and stop any ongoing speech before starting a new one
         currentTask?.cancel()
 

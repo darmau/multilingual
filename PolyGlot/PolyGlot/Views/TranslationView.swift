@@ -12,6 +12,15 @@ struct TranslationView: View {
         settingsList.first ?? Settings()
     }
 
+    /// All languages the user can translate between: their native language + learning languages.
+    private var availableTranslationLanguages: [SupportedLanguage] {
+        var langs = settings.learningLanguages
+        if let native = settings.nativeSupportedLanguage, !langs.contains(native) {
+            langs.insert(native, at: 0)
+        }
+        return langs
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -33,7 +42,7 @@ struct TranslationView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Picker("Source Language", selection: $viewModel.sourceLanguage) {
-                    ForEach(SupportedLanguage.allCases) { lang in
+                    ForEach(availableTranslationLanguages) { lang in
                         Text(lang.displayName).tag(lang)
                     }
                 }
@@ -126,7 +135,7 @@ struct TranslationView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Picker("Target Language", selection: $viewModel.targetLanguage) {
-                    ForEach(SupportedLanguage.allCases) { lang in
+                    ForEach(availableTranslationLanguages) { lang in
                         Text(lang.displayName).tag(lang)
                     }
                 }

@@ -25,6 +25,16 @@ enum LanguageDetector {
             return .japanese
         case .korean:
             return .korean
+        case .french:
+            return .french
+        case .spanish:
+            return .spanish
+        case .arabic:
+            return .arabic
+        case .german:
+            return .german
+        case .portuguese:
+            return .portuguese
         default:
             return nil
         }

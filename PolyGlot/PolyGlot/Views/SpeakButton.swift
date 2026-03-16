@@ -13,28 +13,26 @@ struct SpeakButton: View {
     }
 
     var body: some View {
-        if language != .chinese {
-            Button {
-                if ttsManager.isSpeaking {
-                    ttsManager.stop()
-                } else {
-                    ttsManager.speak(text: text, language: language, settings: settings)
-                }
-            } label: {
-                Group {
-                    if ttsManager.isSpeaking {
-                        Image(systemName: "speaker.wave.3.fill")
-                            .symbolEffect(.variableColor.iterative)
-                    } else {
-                        Image(systemName: "speaker.wave.2")
-                    }
-                }
-                .font(.body)
+        Button {
+            if ttsManager.isSpeaking {
+                ttsManager.stop()
+            } else {
+                ttsManager.speak(text: text, language: language, settings: settings)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(ttsManager.isSpeaking ? "Stop" : "Speak")
-            .accessibilityHint(ttsManager.isSpeaking ? "Tap to stop" : "Tap to read this text aloud")
+        } label: {
+            Group {
+                if ttsManager.isSpeaking {
+                    Image(systemName: "speaker.wave.3.fill")
+                        .symbolEffect(.variableColor.iterative)
+                } else {
+                    Image(systemName: "speaker.wave.2")
+                }
+            }
+            .font(.body)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(ttsManager.isSpeaking ? "Stop" : "Speak")
+        .accessibilityHint(ttsManager.isSpeaking ? "Tap to stop" : "Tap to read this text aloud")
     }
 }
 

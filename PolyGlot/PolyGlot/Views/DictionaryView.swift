@@ -219,10 +219,9 @@ struct DictionaryView: View {
     private func inputWordHeader(result: WordAnalysisResult) -> some View {
         let lang = SupportedLanguage(rawValue: result.inputLanguage)
         let phonetic: String? = {
-            if let lang, lang == .english {
-                return result.analyses.english?.phonetic
-            }
-            return nil
+            guard let lang else { return nil }
+            let analysis = result.analyses.analysis(for: lang)
+            return analysis?.phonetic ?? analysis?.reading ?? analysis?.transliteration ?? analysis?.pinyin
         }()
 
         return VStack(alignment: .leading, spacing: 6) {
@@ -275,6 +274,10 @@ struct DictionaryView: View {
         case .korean:
             if let analysis = analyses.korean {
                 KoreanCard(analysis: analysis)
+            }
+        default:
+            if let analysis = analyses.analysis(for: language) {
+                GenericWordCard(analysis: analysis, language: language)
             }
         }
     }
@@ -333,8 +336,7 @@ struct DictionaryView: View {
     }
 
     private func outputLanguages(for input: SupportedLanguage?) -> [SupportedLanguage] {
-        guard let input else { return SupportedLanguage.allCases }
-        return SupportedLanguage.allCases.filter { $0 != input }
+        return settings.learningLanguages.filter { $0 != input }
     }
 }
 
@@ -487,6 +489,75 @@ private struct KoreanCard: View {
             }
             if let conjugation = analysis.conjugation, !conjugation.isEmpty {
                 MetaRow(label: String(localized: "Conjugation"), value: conjugation)
+            }
+        }
+    }
+}
+
+// MARK: - Generic Language Card (French, Spanish, Arabic, German, Portuguese, etc.)
+
+private struct GenericWordCard: View {
+    let analysis: GenericWordAnalysis
+    let language: SupportedLanguage
+
+    var body: some View {
+        LanguageSection(title: language.displayName, color: .language(language)) {
+            // Word + reading/phonetic header
+            if let word = analysis.word, !word.isEmpty {
+                HStack(alignment: .center, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(word)
+                            .font(.title2.bold())
+                            .modifier(LanguageLocaleModifier(language: language))
+                        if let reading = analysis.phonetic ?? analysis.reading ?? analysis.transliteration ?? analysis.pinyin, !reading.isEmpty {
+                            Text(reading)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let gender = analysis.gender, !gender.isEmpty {
+                            Text(gender)
+                                .font(.caption)
+                                .foregroundStyle(Color.language(language))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.language(language).opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                    }
+                    SpeakButton(text: word, language: language)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // Definitions
+            if let definitions = analysis.definitions, !definitions.isEmpty {
+                DefinitionList(definitions: definitions.map {
+                    AnyDefinition(pos: $0.pos, meaning: $0.meaning, example: $0.example)
+                }, language: language)
+            }
+
+            // Etymology
+            if let etymology = analysis.etymology, !etymology.isEmpty {
+                MetaRow(label: String(localized: "Etymology"), value: etymology)
+            }
+
+            // Root (Arabic)
+            if let root = analysis.root, !root.isEmpty {
+                MetaRow(label: String(localized: "Root"), value: root)
+            }
+
+            // Conjugation
+            if let conjugation = analysis.conjugation, !conjugation.isEmpty {
+                MetaRow(label: String(localized: "Conjugation"), value: conjugation)
+            }
+
+            // Synonyms / Antonyms
+            if let synonyms = analysis.synonyms, !synonyms.isEmpty {
+                WordChipRow(label: String(localized: "Synonyms"), words: synonyms, language: language)
+            }
+            if let antonyms = analysis.antonyms, !antonyms.isEmpty {
+                WordChipRow(label: String(localized: "Antonyms"), words: antonyms, language: language)
             }
         }
     }

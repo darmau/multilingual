@@ -10,6 +10,9 @@ final class Settings {
     var selectedTTSProviderRaw: String
     var interfaceLanguageRaw: String
 
+    /// Comma-separated raw values of SupportedLanguage representing the user's learning targets.
+    var learningLanguagesRaw: String
+
     /// When true, dictionary mode also queries the system dictionary alongside LLM.
     var useSystemDictionary: Bool
 
@@ -28,6 +31,28 @@ final class Settings {
         set { interfaceLanguageRaw = newValue.rawValue }
     }
 
+    /// The languages the user is learning (max 3).
+    var learningLanguages: [SupportedLanguage] {
+        get {
+            learningLanguagesRaw
+                .split(separator: ",")
+                .compactMap { SupportedLanguage(rawValue: String($0)) }
+        }
+        set {
+            learningLanguagesRaw = newValue.map(\.rawValue).joined(separator: ",")
+        }
+    }
+
+    /// The native language name for use in LLM prompts (derived from interface language).
+    var nativeLanguageName: String {
+        interfaceLanguage.promptLanguageName
+    }
+
+    /// The SupportedLanguage corresponding to the user's native language, if any.
+    var nativeSupportedLanguage: SupportedLanguage? {
+        interfaceLanguage.toSupportedLanguage
+    }
+
     /// Returns true when the currently selected LLM provider has a non-empty API key.
     var hasActiveAPIKey: Bool {
         switch selectedLLMProvider {
@@ -42,6 +67,16 @@ final class Settings {
         !openaiAPIKey.isEmpty || !claudeAPIKey.isEmpty || !geminiAPIKey.isEmpty
     }
 
+    /// Default learning languages based on native language.
+    static func defaultLearningLanguages(for interfaceLanguage: InterfaceLanguage) -> [SupportedLanguage] {
+        let native = interfaceLanguage.toSupportedLanguage
+        if native == .english {
+            return [.chinese]
+        } else {
+            return [.english]
+        }
+    }
+
     init(
         openaiAPIKey: String = "",
         claudeAPIKey: String = "",
@@ -49,7 +84,8 @@ final class Settings {
         selectedLLMProvider: LLMProvider = .openai,
         selectedTTSProvider: TTSProvider = .appleLocal,
         useSystemDictionary: Bool = true,
-        interfaceLanguage: InterfaceLanguage = .system
+        interfaceLanguage: InterfaceLanguage = .system,
+        learningLanguages: [SupportedLanguage]? = nil
     ) {
         self.openaiAPIKey = openaiAPIKey
         self.claudeAPIKey = claudeAPIKey
@@ -58,5 +94,7 @@ final class Settings {
         self.selectedTTSProviderRaw = selectedTTSProvider.rawValue
         self.useSystemDictionary = useSystemDictionary
         self.interfaceLanguageRaw = interfaceLanguage.rawValue
+        let langs = learningLanguages ?? Settings.defaultLearningLanguages(for: interfaceLanguage)
+        self.learningLanguagesRaw = langs.map(\.rawValue).joined(separator: ",")
     }
 }

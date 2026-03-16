@@ -4,23 +4,23 @@ import Foundation
 struct KoreanPromptProvider: LanguagePromptProvider {
     let language: SupportedLanguage = .korean
 
-    func dictionaryBlock(detailed: Bool) -> String {
+    func dictionaryBlock(detailed: Bool, nativeLanguage: String) -> String {
         if detailed {
             return """
                 "korean": {
-                  "word": "韩语单词",
-                  "reading": "罗马音",
-                  "definitions": [{"pos": "품사", "meaning": "中文释义", "example": "韩语例句"}],
-                  "etymology": "词源（用中文）",
-                  "conjugation": "变形（如适用，否则为null）"
+                  "word": "Korean word",
+                  "reading": "romanization",
+                  "definitions": [{"pos": "part of speech", "meaning": "definition in \(nativeLanguage)", "example": "Korean example sentence"}],
+                  "etymology": "etymology (in \(nativeLanguage))",
+                  "conjugation": "conjugation if applicable, otherwise null"
                 }
             """
         } else {
             return """
                 "korean": {
-                  "word": "韩语单词",
-                  "reading": "罗马音",
-                  "definitions": [{"pos": "품사", "meaning": "中文释义", "example": "韩语例句"}],
+                  "word": "Korean word",
+                  "reading": "romanization",
+                  "definitions": [{"pos": "part of speech", "meaning": "definition in \(nativeLanguage)", "example": "Korean example sentence"}],
                   "etymology": null,
                   "conjugation": null
                 }
@@ -28,21 +28,21 @@ struct KoreanPromptProvider: LanguagePromptProvider {
         }
     }
 
-    func sentenceBlock(isInput: Bool) -> String {
+    func sentenceBlock(isInput: Bool, nativeLanguage: String) -> String {
         let grammarSection = isInput ? """
               "grammar": {
-                "structure": "문형 분析（用中文说明）",
-                "particles": [{"particle": "은/는", "function": "用中文说明"}],
-                "conjugations": [{"word": "原形", "conjugated": "变形", "type": "变形类型"}],
-                "politeness_level": "敬语等级",
-                "key_patterns": [{"pattern": "~고 싶다", "meaning": "中文解释"}]
+                "structure": "sentence pattern analysis (in \(nativeLanguage))",
+                "particles": [{"particle": "은/는", "function": "function explanation in \(nativeLanguage)"}],
+                "conjugations": [{"word": "base form", "conjugated": "conjugated form", "type": "conjugation type"}],
+                "politeness_level": "politeness level",
+                "key_patterns": [{"pattern": "~고 싶다", "meaning": "meaning in \(nativeLanguage)"}]
               }
         """ : """
               "grammar": null
         """
         return """
             "korean": {
-              "translation": "韩语翻译",
+              "translation": "Korean translation",
         \(grammarSection)
             }
         """

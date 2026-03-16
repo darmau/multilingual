@@ -7,15 +7,15 @@ import Foundation
 struct JapanesePromptProvider: LanguagePromptProvider {
     let language: SupportedLanguage = .japanese
 
-    func dictionaryBlock(detailed: Bool) -> String {
+    func dictionaryBlock(detailed: Bool, nativeLanguage: String) -> String {
         if detailed {
             return """
                 "japanese": {
-                  "word": "日语单词（含{漢字|かな}格式注音）",
-                  "reading": "假名读音",
-                  "definitions": [{"pos": "品词", "meaning": "中文释义", "example": "日语例句（含{漢字|かな}注音）", "example_reading": "例句假名读音"}],
-                  "etymology": "词源（用中文）",
-                  "conjugation": "动词/形容词变形表（如适用，否则为null）",
+                  "word": "Japanese word (with {漢字|かな} furigana for all kanji)",
+                  "reading": "kana reading",
+                  "definitions": [{"pos": "part of speech", "meaning": "definition in \(nativeLanguage)", "example": "Japanese example (with {漢字|かな} furigana)", "example_reading": "kana reading of example"}],
+                  "etymology": "etymology (in \(nativeLanguage))",
+                  "conjugation": "conjugation table if applicable, otherwise null",
                   "synonyms": ["word1"],
                   "antonyms": ["word1"]
                 }
@@ -23,10 +23,10 @@ struct JapanesePromptProvider: LanguagePromptProvider {
         } else {
             return """
                 "japanese": {
-                  "word": "日语单词（含{漢字|かな}格式注音）",
-                  "reading": "假名读音",
-                  "definitions": [{"pos": "品词", "meaning": "中文释义", "example": "日语例句（含{漢字|かな}注音）", "example_reading": "例句假名读音"}],
-                  "etymology": "词源（用中文）",
+                  "word": "Japanese word (with {漢字|かな} furigana for all kanji)",
+                  "reading": "kana reading",
+                  "definitions": [{"pos": "part of speech", "meaning": "definition in \(nativeLanguage)", "example": "Japanese example (with {漢字|かな} furigana)", "example_reading": "kana reading of example"}],
+                  "etymology": "etymology (in \(nativeLanguage))",
                   "conjugation": null,
                   "synonyms": [],
                   "antonyms": []
@@ -35,22 +35,22 @@ struct JapanesePromptProvider: LanguagePromptProvider {
         }
     }
 
-    func sentenceBlock(isInput: Bool) -> String {
+    func sentenceBlock(isInput: Bool, nativeLanguage: String) -> String {
         let grammarSection = isInput ? """
               "grammar": {
-                "structure": "文型分析（用中文说明）",
-                "particles": [{"particle": "は", "function": "用中文说明作用"}],
-                "conjugations": [{"word": "原形", "conjugated": "活用形", "type": "活用类型"}],
-                "politeness_level": "敬语等级",
-                "key_patterns": [{"pattern": "～てしまう", "meaning": "中文解释", "usage": "用法说明"}]
+                "structure": "sentence pattern analysis (in \(nativeLanguage))",
+                "particles": [{"particle": "は", "function": "function explanation in \(nativeLanguage)"}],
+                "conjugations": [{"word": "base form", "conjugated": "conjugated form", "type": "conjugation type"}],
+                "politeness_level": "politeness level",
+                "key_patterns": [{"pattern": "～てしまう", "meaning": "meaning in \(nativeLanguage)", "usage": "usage notes"}]
               }
         """ : """
               "grammar": null
         """
         return """
             "japanese": {
-              "translation": "日语翻译（含{漢字|かな}注音）",
-              "translation_reading": "翻译的假名全文注音",
+              "translation": "Japanese translation (with {漢字|かな} furigana for all kanji)",
+              "translation_reading": "full kana reading of translation",
         \(grammarSection)
             }
         """

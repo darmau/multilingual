@@ -11,6 +11,11 @@ enum LanguagePromptRegistry {
         .english: EnglishPromptProvider(),
         .japanese: JapanesePromptProvider(),
         .korean: KoreanPromptProvider(),
+        .french: FrenchPromptProvider(),
+        .spanish: SpanishPromptProvider(),
+        .arabic: ArabicPromptProvider(),
+        .german: GermanPromptProvider(),
+        .portuguese: PortuguesePromptProvider(),
     ]
 
     /// Returns the prompt provider for a given language.
@@ -21,11 +26,8 @@ enum LanguagePromptRegistry {
         return provider
     }
 
-    /// Returns providers for all languages except the input language,
-    /// preserving the `allCases` ordering.
-    static func outputProviders(for inputLanguage: SupportedLanguage) -> [LanguagePromptProvider] {
-        SupportedLanguage.allCases
-            .filter { $0 != inputLanguage }
-            .map { provider(for: $0) }
+    /// Returns providers for the specified output languages, preserving order.
+    static func outputProviders(for languages: [SupportedLanguage]) -> [LanguagePromptProvider] {
+        languages.map { provider(for: $0) }
     }
 }
