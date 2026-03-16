@@ -1,6 +1,7 @@
 import Foundation
 
-/// Builds LLM prompts for each app mode.
+/// Assembles LLM prompts by delegating to per-language ``LanguagePromptProvider`` instances
+/// via ``LanguagePromptRegistry``.
 struct PromptBuilder {
 
     // MARK: - Dictionary Mode
@@ -10,14 +11,14 @@ struct PromptBuilder {
     """
 
     /// Builds a user prompt for dictionary word analysis.
-    /// - Parameters:
-    ///   - word: The word entered by the user.
-    ///   - inputLanguage: The detected/selected language of the word.
-    /// - Returns: A user prompt string requesting structured JSON analysis.
     static func dictionaryPrompt(word: String, inputLanguage: SupportedLanguage) -> String {
         let languageName = inputLanguage.promptName
-        let outputLanguages = outputLanguages(for: inputLanguage)
-        let analysesBlock = buildAnalysesBlock(inputLanguage: inputLanguage, outputLanguages: outputLanguages)
+        let inputProvider = LanguagePromptRegistry.provider(for: inputLanguage)
+        let outputProviders = LanguagePromptRegistry.outputProviders(for: inputLanguage)
+
+        var blocks = [inputProvider.dictionaryBlock(detailed: true)]
+        blocks += outputProviders.map { $0.dictionaryBlock(detailed: false) }
+        let analysesBlock = blocks.joined(separator: ",\n")
 
         return """
         Analyze the \(languageName) word: "\(word)". Return a JSON object with this exact structure:
@@ -32,124 +33,6 @@ struct PromptBuilder {
         """
     }
 
-    // MARK: - Private Helpers
-
-    /// Returns the three output languages for a given input language.
-    private static func outputLanguages(for input: SupportedLanguage) -> [SupportedLanguage] {
-        switch input {
-        case .chinese:  return [.english, .japanese, .korean]
-        case .english:  return [.chinese, .japanese, .korean]
-        case .japanese: return [.chinese, .english, .korean]
-        case .korean:   return [.chinese, .english, .japanese]
-        }
-    }
-
-    /// Builds the JSON template for the "analyses" field.
-    private static func buildAnalysesBlock(inputLanguage: SupportedLanguage, outputLanguages: [SupportedLanguage]) -> String {
-        var parts: [String] = []
-
-        // The input language gets detailed analysis; output languages vary by type
-        let allLanguages = [inputLanguage] + outputLanguages.filter { $0 != inputLanguage }
-
-        for language in allLanguages {
-            let isInput = language == inputLanguage
-            switch language {
-            case .english:
-                parts.append(englishBlock(detailed: isInput))
-            case .chinese:
-                parts.append(chineseBlock())
-            case .japanese:
-                parts.append(japaneseBlock(detailed: isInput))
-            case .korean:
-                parts.append(koreanBlock(detailed: isInput))
-            }
-        }
-
-        return parts.joined(separator: ",\n")
-    }
-
-    private static func englishBlock(detailed: Bool) -> String {
-        if detailed {
-            return """
-                "english": {
-                  "definitions": [{"pos": "noun/verb/adj/...", "meaning": "中文释义", "example": "English example sentence"}],
-                  "phonetic": "IPA notation",
-                  "etymology": "词源说明（用中文）",
-                  "synonyms": ["word1", "word2"],
-                  "antonyms": ["word1", "word2"]
-                }
-            """
-        } else {
-            return """
-                "english": {
-                  "definitions": [{"pos": "noun/verb/adj/...", "meaning": "中文释义", "example": "English example sentence"}],
-                  "phonetic": "IPA notation"
-                }
-            """
-        }
-    }
-
-    private static func chineseBlock() -> String {
-        return """
-            "chinese": {
-              "word": "对应中文词",
-              "definitions": [{"meaning": "释义"}]
-            }
-        """
-    }
-
-    private static func japaneseBlock(detailed: Bool) -> String {
-        if detailed {
-            return """
-                "japanese": {
-                  "word": "日语单词（含{漢字|かな}格式注音）",
-                  "reading": "假名读音",
-                  "definitions": [{"pos": "品词", "meaning": "中文释义", "example": "日语例句（含{漢字|かな}注音）", "example_reading": "例句假名读音"}],
-                  "etymology": "词源（用中文）",
-                  "conjugation": "动词/形容词变形表（如适用，否则为null）",
-                  "synonyms": ["word1"],
-                  "antonyms": ["word1"]
-                }
-            """
-        } else {
-            return """
-                "japanese": {
-                  "word": "日语单词（含{漢字|かな}格式注音）",
-                  "reading": "假名读音",
-                  "definitions": [{"pos": "品词", "meaning": "中文释义", "example": "日语例句（含{漢字|かな}注音）", "example_reading": "例句假名读音"}],
-                  "etymology": "词源（用中文）",
-                  "conjugation": null,
-                  "synonyms": [],
-                  "antonyms": []
-                }
-            """
-        }
-    }
-
-    private static func koreanBlock(detailed: Bool) -> String {
-        if detailed {
-            return """
-                "korean": {
-                  "word": "韩语单词",
-                  "reading": "罗马音",
-                  "definitions": [{"pos": "품사", "meaning": "中文释义", "example": "韩语例句"}],
-                  "etymology": "词源（用中文）",
-                  "conjugation": "变形（如适用，否则为null）"
-                }
-            """
-        } else {
-            return """
-                "korean": {
-                  "word": "韩语单词",
-                  "reading": "罗马音",
-                  "definitions": [{"pos": "품사", "meaning": "中文释义", "example": "韩语例句"}],
-                  "etymology": null,
-                  "conjugation": null
-                }
-            """
-        }
-    }
-
     // MARK: - Sentence Mode
 
     static let sentenceSystemPrompt = """
@@ -159,10 +42,15 @@ struct PromptBuilder {
     /// Builds a user prompt for sentence grammar analysis.
     static func sentencePrompt(sentence: String, inputLanguage: SupportedLanguage) -> String {
         let languageName = inputLanguage.promptName
-        let analysesBlock = buildSentenceAnalysesBlock(inputLanguage: inputLanguage)
+        let inputProvider = LanguagePromptRegistry.provider(for: inputLanguage)
+        let outputProviders = LanguagePromptRegistry.outputProviders(for: inputLanguage)
+
+        var blocks = [inputProvider.sentenceBlock(isInput: true)]
+        blocks += outputProviders.map { $0.sentenceBlock(isInput: false) }
+        let analysesBlock = blocks.joined(separator: ",\n")
 
         return """
-        Analyze this \(languageName) sentence: "\(sentence)". Return a JSON object with this exact structure:
+        Analyze this \(languageName) sentence: "\(sentence.replacingOccurrences(of: "\"", with: "\\\""))". Return a JSON object with this exact structure:
         {
           "input_sentence": "\(sentence.replacingOccurrences(of: "\"", with: "\\\""))",
           "input_language": "\(inputLanguage.rawValue)",
@@ -174,114 +62,17 @@ struct PromptBuilder {
         """
     }
 
-    private static func buildSentenceAnalysesBlock(inputLanguage: SupportedLanguage) -> String {
-        let allLanguages: [SupportedLanguage]
-        switch inputLanguage {
-        case .chinese:  allLanguages = [.chinese, .english, .japanese, .korean]
-        case .english:  allLanguages = [.english, .chinese, .japanese, .korean]
-        case .japanese: allLanguages = [.japanese, .chinese, .english, .korean]
-        case .korean:   allLanguages = [.korean, .chinese, .english, .japanese]
-        }
+    // MARK: - Translation Mode
 
-        let parts = allLanguages.map { lang -> String in
-            let isInput = lang == inputLanguage
-            switch lang {
-            case .chinese:
-                return sentenceChineseBlock()
-            case .english:
-                return sentenceEnglishBlock(isInput: isInput)
-            case .japanese:
-                return sentenceJapaneseBlock(isInput: isInput)
-            case .korean:
-                return sentenceKoreanBlock(isInput: isInput)
-            }
-        }
-        return parts.joined(separator: ",\n")
+    /// Returns the system prompt for translating text between two languages.
+    static func translationSystemPrompt(from source: SupportedLanguage, to target: SupportedLanguage) -> String {
+        LanguagePromptRegistry.provider(for: target)
+            .translationSystemPrompt(from: source)
     }
 
-    private static func sentenceChineseBlock() -> String {
-        """
-            "chinese": {
-              "translation": "中文翻译（若输入为中文则填null）"
-            }
-        """
-    }
+    // MARK: - Question Mode
 
-    private static func sentenceEnglishBlock(isInput: Bool) -> String {
-        let grammarSection = isInput ? """
-              "grammar": {
-                "structure": "句型分析（用中文说明）",
-                "tense": "时态",
-                "voice": "语态",
-                "clauses": ["从句拆解（每个从句单独一项）"],
-                "key_phrases": [{"phrase": "...", "explanation": "中文解释", "grammar_point": "语法点"}]
-              }
-        """ : """
-              "grammar": null
-        """
-        let translationLine = isInput ? "" : """
-              "translation": "英文翻译",
-        """
-        return """
-            "english": {
-        \(translationLine)
-        \(grammarSection)
-            }
-        """
-    }
-
-    private static func sentenceJapaneseBlock(isInput: Bool) -> String {
-        let grammarSection = isInput ? """
-              "grammar": {
-                "structure": "文型分析（用中文说明）",
-                "particles": [{"particle": "は", "function": "用中文说明作用"}],
-                "conjugations": [{"word": "原形", "conjugated": "活用形", "type": "活用类型"}],
-                "politeness_level": "敬语等级",
-                "key_patterns": [{"pattern": "～てしまう", "meaning": "中文解释", "usage": "用法说明"}]
-              }
-        """ : """
-              "grammar": null
-        """
-        return """
-            "japanese": {
-              "translation": "日语翻译（含{漢字|かな}注音）",
-              "translation_reading": "翻译的假名全文注音",
-        \(grammarSection)
-            }
-        """
-    }
-
-    private static func sentenceKoreanBlock(isInput: Bool) -> String {
-        let grammarSection = isInput ? """
-              "grammar": {
-                "structure": "문형 분析（用中文说明）",
-                "particles": [{"particle": "은/는", "function": "用中文说明"}],
-                "conjugations": [{"word": "原形", "conjugated": "变形", "type": "变形类型"}],
-                "politeness_level": "敬语等级",
-                "key_patterns": [{"pattern": "~고 싶다", "meaning": "中文解释"}]
-              }
-        """ : """
-              "grammar": null
-        """
-        return """
-            "korean": {
-              "translation": "韩语翻译",
-        \(grammarSection)
-            }
-        """
-    }
-}
-
-// MARK: - SupportedLanguage Extension for Prompts
-
-private extension SupportedLanguage {
-    /// Human-readable language name for use in LLM prompts.
-    var promptName: String {
-        switch self {
-        case .chinese:  return "Chinese"
-        case .english:  return "English"
-        case .japanese: return "Japanese"
-        case .korean:   return "Korean"
-        }
-    }
+    static let questionSystemPrompt = """
+    You are a helpful multilingual assistant. Respond in the same language the user used to ask the question. Be concise and educational.
+    """
 }
