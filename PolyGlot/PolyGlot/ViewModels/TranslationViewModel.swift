@@ -68,7 +68,7 @@ final class TranslationViewModel {
 
         defer { isLoading = false }
 
-        let systemPrompt = "You are a professional translator. Translate the following text from \(sourceLanguage.displayName) to \(targetLanguage.displayName). Output ONLY the translated text, no explanations."
+        let systemPrompt = PromptBuilder.translationSystemPrompt(from: sourceLanguage, to: targetLanguage)
 
         do {
             for try await chunk in llmManager.streamPrompt(text, systemPrompt: systemPrompt, settings: settings) {

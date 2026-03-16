@@ -34,4 +34,14 @@ enum SupportedLanguage: String, CaseIterable, Codable, Identifiable {
         case .korean: return Locale(identifier: "ko_KR")
         }
     }
+
+    /// Human-readable language name for use in LLM prompts.
+    var promptName: String {
+        switch self {
+        case .chinese: return "Chinese"
+        case .english: return "English"
+        case .japanese: return "Japanese"
+        case .korean: return "Korean"
+        }
+    }
 }

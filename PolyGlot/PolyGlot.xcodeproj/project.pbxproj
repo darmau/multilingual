@@ -52,6 +52,12 @@
 		A10000280000000000000022 /* TTSManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000280000000000000022 /* TTSManager.swift */; };
 		A10000290000000000000023 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000290000000000000023 /* LanguageDetector.swift */; };
 		A1000030000000000000002A /* SpeakButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030000000000000002A /* SpeakButton.swift */; };
+		0DP00001000000000000F001 /* LanguagePromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00002000000000000F002 /* LanguagePromptProvider.swift */; };
+		0DP00003000000000000F003 /* LanguagePromptRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00004000000000000F004 /* LanguagePromptRegistry.swift */; };
+		0DP00005000000000000F005 /* ChinesePromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00006000000000000F006 /* ChinesePromptProvider.swift */; };
+		0DP00007000000000000F007 /* EnglishPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP00008000000000000F008 /* EnglishPromptProvider.swift */; };
+		0DP00009000000000000F009 /* JapanesePromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP0000A000000000000F00A /* JapanesePromptProvider.swift */; };
+		0DP0000B000000000000F00B /* KoreanPromptProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DP0000C000000000000F00C /* KoreanPromptProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +107,12 @@
 		A20000290000000000000023 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
 		A2000030000000000000002A /* SpeakButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakButton.swift; sourceTree = "<group>"; };
 		A30000010000000000000001 /* PolyGlot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PolyGlot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DP00002000000000000F002 /* LanguagePromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePromptProvider.swift; sourceTree = "<group>"; };
+		0DP00004000000000000F004 /* LanguagePromptRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePromptRegistry.swift; sourceTree = "<group>"; };
+		0DP00006000000000000F006 /* ChinesePromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChinesePromptProvider.swift; sourceTree = "<group>"; };
+		0DP00008000000000000F008 /* EnglishPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnglishPromptProvider.swift; sourceTree = "<group>"; };
+		0DP0000A000000000000F00A /* JapanesePromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JapanesePromptProvider.swift; sourceTree = "<group>"; };
+		0DP0000C000000000000F00C /* KoreanPromptProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KoreanPromptProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,9 +197,23 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		0DP0000D000000000000F00D /* Prompts */ = {
+			isa = PBXGroup;
+			children = (
+				0DP00002000000000000F002 /* LanguagePromptProvider.swift */,
+				0DP00004000000000000F004 /* LanguagePromptRegistry.swift */,
+				0DP00006000000000000F006 /* ChinesePromptProvider.swift */,
+				0DP00008000000000000F008 /* EnglishPromptProvider.swift */,
+				0DP0000A000000000000F00A /* JapanesePromptProvider.swift */,
+				0DP0000C000000000000F00C /* KoreanPromptProvider.swift */,
+			);
+			path = Prompts;
+			sourceTree = "<group>";
+		};
 		A50000060000000000000006 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				0DP0000D000000000000F00D /* Prompts */,
 				A2000020000000000000001A /* LLMServiceProtocol.swift */,
 				A2000022000000000000001C /* OpenAIService.swift */,
 				A2000023000000000000001D /* ClaudeService.swift */,
@@ -358,6 +384,12 @@
 				A10000290000000000000023 /* LanguageDetector.swift in Sources */,
 				A1000030000000000000002A /* SpeakButton.swift in Sources */,
 				0DL10001000000000000F001 /* InterfaceLanguage.swift in Sources */,
+				0DP00001000000000000F001 /* LanguagePromptProvider.swift in Sources */,
+				0DP00003000000000000F003 /* LanguagePromptRegistry.swift in Sources */,
+				0DP00005000000000000F005 /* ChinesePromptProvider.swift in Sources */,
+				0DP00007000000000000F007 /* EnglishPromptProvider.swift in Sources */,
+				0DP00009000000000000F009 /* JapanesePromptProvider.swift in Sources */,
+				0DP0000B000000000000F00B /* KoreanPromptProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -14,7 +14,7 @@ final class QuestionViewModel {
     private let llmManager = LLMManager()
     private var currentTask: Task<Void, Never>?
 
-    private let systemPrompt = "You are a helpful multilingual assistant. Respond in the same language the user used to ask the question. Be concise and educational."
+    private let systemPrompt = PromptBuilder.questionSystemPrompt
 
     var isAPIKeyError: Bool {
         guard let msg = errorMessage else { return false }
