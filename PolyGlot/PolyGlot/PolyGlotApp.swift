@@ -45,6 +45,14 @@ struct PolyGlotApp: App {
             RootView()
         }
         .modelContainer(modelContainer)
+
+        #if os(macOS)
+        SwiftUI.Settings {
+            SettingsView()
+                .modelContainer(modelContainer)
+                .frame(minWidth: 500, minHeight: 500)
+        }
+        #endif
     }
 }
 

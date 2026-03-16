@@ -10,36 +10,34 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    languageCard
-                    learningLanguagesCard
-                    offlineCapabilitiesCard
-                    apiKeysCard
-                    providerCard
-                    connectionTestCard
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 12)
+        ScrollView {
+            VStack(spacing: 20) {
+                languageCard
+                learningLanguagesCard
+                offlineCapabilitiesCard
+                apiKeysCard
+                providerCard
+                connectionTestCard
             }
-            .background(.background.secondary)
-            .navigationTitle("Settings")
-            .onAppear {
-                viewModel.load(from: settings)
-            }
-            .onChange(of: viewModel.openaiAPIKey) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.claudeAPIKey) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.geminiAPIKey) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.selectedLLMProvider) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
-            .onChange(of: viewModel.interfaceLanguage) { _, _ in
-                viewModel.syncLearningLanguagesWithNative()
-                viewModel.save(to: settings)
-            }
-            .onChange(of: viewModel.learningLanguages) { _, _ in viewModel.save(to: settings) }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
         }
+        .background(.background.secondary)
+        .navigationTitle("Settings")
+        .onAppear {
+            viewModel.load(from: settings)
+        }
+        .onChange(of: viewModel.openaiAPIKey) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.claudeAPIKey) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.geminiAPIKey) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.selectedLLMProvider) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.selectedTTSProvider) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.useSystemDictionary) { _, _ in viewModel.save(to: settings) }
+        .onChange(of: viewModel.interfaceLanguage) { _, _ in
+            viewModel.syncLearningLanguagesWithNative()
+            viewModel.save(to: settings)
+        }
+        .onChange(of: viewModel.learningLanguages) { _, _ in viewModel.save(to: settings) }
     }
 
     // MARK: - Language Card (Interface/Native Language)

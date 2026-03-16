@@ -8,7 +8,6 @@ enum AppTab: String, CaseIterable, Identifiable {
     case sentence
     case translation
     case question
-    case settings
 
     var id: String { rawValue }
 
@@ -18,7 +17,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .sentence:     return "Sentence Analysis"
         case .translation:  return "Translation"
         case .question:     return "Question"
-        case .settings:     return "Settings"
         }
     }
 
@@ -28,7 +26,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .sentence:     return "text.magnifyingglass"
         case .translation:  return "arrow.left.arrow.right"
         case .question:     return "questionmark.bubble"
-        case .settings:     return "gear"
         }
     }
 }
@@ -37,24 +34,19 @@ enum AppTab: String, CaseIterable, Identifiable {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab? = .dictionary
+    @State private var showSettings = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var settingsList: [Settings]
 
     /// Shared NetworkMonitor — observed for the offline banner.
     private let network = NetworkMonitor.shared
 
-    /// The locale to inject into each tab's content, derived from the user's
-    /// interface language setting. Injecting it here (rather than only at the
-    /// RootView level) ensures that NavigationSplitView's detail column — which
-    /// can lose parent environment on macOS — also receives the correct locale,
-    /// so NavigationStack titles render in the chosen language.
     private var locale: Locale? {
         settingsList.first?.interfaceLanguage.locale
     }
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Main layout
             if horizontalSizeClass == .compact {
                 compactLayout
             } else {
@@ -73,8 +65,19 @@ struct ContentView: View {
                 .animation(.spring(duration: 0.3), value: network.isConnected)
             }
         }
-        // Allow any child view to navigate to Settings for API key setup
-        .environment(\.navigateToSettings, { selectedTab = .settings })
+        .environment(\.navigateToSettings, { showSettings = true })
+        #if os(iOS)
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showSettings = false }
+                        }
+                    }
+            }
+        }
+        #endif
     }
 
     // MARK: - Compact (iPhone) — TabView
@@ -101,10 +104,30 @@ struct ContentView: View {
             }
             .navigationTitle("PolyGlot")
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
+            #if os(iOS)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    settingsButton
+                }
+            }
+            #endif
         } detail: {
             tabContent(selectedTab ?? .dictionary)
         }
     }
+
+    // MARK: - Settings Button (iOS only)
+
+    #if os(iOS)
+    private var settingsButton: some View {
+        Button {
+            showSettings = true
+        } label: {
+            Image(systemName: "gear")
+        }
+        .accessibilityLabel("Settings")
+    }
+    #endif
 
     // MARK: - Shared Content Router
 
@@ -115,7 +138,6 @@ struct ContentView: View {
         case .sentence:     AnyView(SentenceView())
         case .translation:  AnyView(TranslationView())
         case .question:     AnyView(QuestionView())
-        case .settings:     AnyView(SettingsView())
         }
         if let locale {
             content.environment(\.locale, locale)
